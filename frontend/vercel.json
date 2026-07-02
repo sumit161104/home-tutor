@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://hometutor-backend.onrender.com/api/:path*"
+    }
+  ]
+}
