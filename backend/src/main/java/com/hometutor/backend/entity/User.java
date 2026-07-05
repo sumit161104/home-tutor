@@ -30,6 +30,18 @@ public class User {
     @Column(name = "profile_image", length = 255)
     private String profileImage;
 
+    @Column(length = 20)
+    private String gender;
+
+    @Column(name = "linkedin_url", length = 255)
+    private String linkedinUrl;
+
+    @Column(name = "child_gender", length = 20)
+    private String childGender;
+
+    @Column(name = "number_of_children")
+    private Integer numberOfChildren = 0;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -110,5 +122,37 @@ public class User {
 
     public void setApproved(boolean approved) {
         isApproved = approved;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getLinkedinUrl() {
+        return linkedinUrl;
+    }
+
+    public void setLinkedinUrl(String linkedinUrl) {
+        this.linkedinUrl = linkedinUrl;
+    }
+
+    public String getChildGender() {
+        return childGender;
+    }
+
+    public void setChildGender(String childGender) {
+        this.childGender = childGender;
+    }
+
+    public Integer getNumberOfChildren() {
+        return numberOfChildren;
+    }
+
+    public void setNumberOfChildren(Integer numberOfChildren) {
+        this.numberOfChildren = numberOfChildren;
     }
 }

@@ -22,13 +22,19 @@ public class TutorProfile {
     @Column(length = 255)
     private String qualification;
 
-    private Integer experience; // in years
+    private Double experience; // in years
 
     @Column(precision = 10, scale = 2)
     private BigDecimal fees;
 
     @Column(length = 100)
     private String city;
+
+    @Column(length = 100)
+    private String state;
+
+    @Column(name = "is_available")
+    private Boolean isAvailable = true;
 
     @Column(columnDefinition = "TEXT")
     private String address;
@@ -97,12 +103,28 @@ public class TutorProfile {
         this.qualification = qualification;
     }
 
-    public Integer getExperience() {
+    public Double getExperience() {
         return experience;
     }
 
-    public void setExperience(Integer experience) {
+    public void setExperience(Double experience) {
         this.experience = experience;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public Boolean getIsAvailable() {
+        return isAvailable;
+    }
+
+    public void setIsAvailable(Boolean isAvailable) {
+        this.isAvailable = isAvailable;
     }
 
     public BigDecimal getFees() {

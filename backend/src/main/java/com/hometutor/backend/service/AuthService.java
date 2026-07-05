@@ -4,9 +4,11 @@ import com.hometutor.backend.dto.AuthResponse;
 import com.hometutor.backend.dto.LoginRequest;
 import com.hometutor.backend.dto.RegisterRequest;
 import com.hometutor.backend.entity.TutorProfile;
+import com.hometutor.backend.entity.TutorVerification;
 import com.hometutor.backend.entity.User;
 import com.hometutor.backend.entity.UserRole;
 import com.hometutor.backend.repository.TutorProfileRepository;
+import com.hometutor.backend.repository.TutorVerificationRepository;
 import com.hometutor.backend.repository.UserRepository;
 import com.hometutor.backend.security.JwtTokenProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,15 +20,18 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final TutorProfileRepository tutorProfileRepository;
+    private final TutorVerificationRepository tutorVerificationRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
 
     public AuthService(UserRepository userRepository,
                        TutorProfileRepository tutorProfileRepository,
+                       TutorVerificationRepository tutorVerificationRepository,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider) {
         this.userRepository = userRepository;
         this.tutorProfileRepository = tutorProfileRepository;
+        this.tutorVerificationRepository = tutorVerificationRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
     }
@@ -50,14 +55,32 @@ public class AuthService {
         }
         
         user.setProfileImage(request.getProfileImage());
+        user.setGender(request.getGender());
+        user.setLinkedinUrl(request.getLinkedinUrl());
+        
+        try {
+            UserRole role = UserRole.valueOf(request.getRole().toUpperCase());
+            user.setRole(role);
+            if (role == UserRole.GUARDIAN) {
+                user.setChildGender(request.getChildGender());
+                user.setNumberOfChildren(request.getNumberOfChildren());
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid role! Must be GUARDIAN or TUTOR.");
+        }
 
         User savedUser = userRepository.save(user);
 
-        // If the user is a TUTOR, create an empty TutorProfile
+        // If the user is a TUTOR, create an empty TutorProfile AND a TutorVerification record in PENDING state
         if (savedUser.getRole() == UserRole.TUTOR) {
             TutorProfile profile = new TutorProfile();
             profile.setUser(savedUser);
-            tutorProfileRepository.save(profile);
+            TutorProfile savedProfile = tutorProfileRepository.save(profile);
+
+            TutorVerification verification = new TutorVerification();
+            verification.setTutorProfile(savedProfile);
+            verification.setStatus("PENDING");
+            tutorVerificationRepository.save(verification);
         }
 
         // Tutors and Guardians require admin approval to log in

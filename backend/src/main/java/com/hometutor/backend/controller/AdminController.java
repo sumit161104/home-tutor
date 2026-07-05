@@ -103,6 +103,13 @@ public class AdminController {
         profile.setIsVerified(true);
         tutorProfileRepository.save(profile);
 
+        // Also approve the associated User account so they can log in (Item 12)
+        User tutorUser = profile.getUser();
+        if (tutorUser != null) {
+            tutorUser.setApproved(true);
+            userRepository.save(tutorUser);
+        }
+
         return ResponseEntity.ok(verification);
     }
 

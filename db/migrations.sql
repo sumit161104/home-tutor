@@ -57,3 +57,15 @@ CREATE TABLE IF NOT EXISTS reports (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT FALSE;
 -- Approve all existing users so they don't get locked out
 UPDATE users SET is_approved = TRUE;
+
+-- 7. Add new columns for Gender, LinkedIn, child details, state, and availability
+ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS child_gender VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS number_of_children INTEGER DEFAULT 0;
+
+ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS state VARCHAR(100);
+ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
+
+-- 8. Alter tutor experience column to support decimal years (e.g. 1.5 years)
+ALTER TABLE tutor_profiles ALTER COLUMN experience TYPE DOUBLE PRECISION;

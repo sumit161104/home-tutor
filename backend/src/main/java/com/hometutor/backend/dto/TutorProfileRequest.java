@@ -6,9 +6,11 @@ import java.util.Set;
 
 public class TutorProfileRequest {
     private String qualification;
-    private Integer experience;
+    private Double experience;
     private BigDecimal fees;
     private String city;
+    private String state;
+    private Boolean isAvailable;
     private String address;
     private Double latitude;
     private Double longitude;
@@ -28,12 +30,28 @@ public class TutorProfileRequest {
         this.qualification = qualification;
     }
 
-    public Integer getExperience() {
+    public Double getExperience() {
         return experience;
     }
 
-    public void setExperience(Integer experience) {
+    public void setExperience(Double experience) {
         this.experience = experience;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public Boolean getIsAvailable() {
+        return isAvailable;
+    }
+
+    public void setIsAvailable(Boolean isAvailable) {
+        this.isAvailable = isAvailable;
     }
 
     public BigDecimal getFees() {

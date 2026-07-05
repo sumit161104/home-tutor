@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { 
   Search, MapPin, Award, BookOpen, Clock, Calendar, 
-  User as UserIcon, Phone, Mail, DollarSign, LogIn, 
+  User as UserIcon, Phone, Mail, IndianRupee, Eye, EyeOff, LogIn, 
   LogOut, Shield, ChevronRight, X, Compass, CheckCircle2, 
   Plus, Trash2, Edit3, MessageCircle, Star, AlertTriangle, 
   Check, FileText, BarChart2, CheckSquare 
@@ -9,14 +9,43 @@ import {
 
 export default function App() {
   // Navigation / Route state: 'search' | 'detail' | 'login' | 'register' | 'tutor-dashboard' | 'guardian-dashboard' | 'admin-dashboard'
-  const [currentView, setCurrentView] = useState('search')
+  const [currentView, setCurrentView] = useState(localStorage.getItem('token') ? 'search' : 'login')
   
+  // Password Visibility States
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false)
+  const [showAdminPassword, setShowAdminPassword] = useState(false)
+  const [showProfilePassword, setShowProfilePassword] = useState(false)
+  
+  // Register Role selection State
+  const [registerRole, setRegisterRole] = useState('GUARDIAN')
+
+  // Available Tutors Filter Toggle (3-way selector: 'ALL' | 'AVAILABLE' | 'UNAVAILABLE')
+  const [availabilityFilter, setAvailabilityFilter] = useState('ALL')
+  
+  // Experience Formatter to display fractional years as years and months
+  const formatExperience = (exp) => {
+    if (exp === null || exp === undefined || exp === '') return 'N/A'
+    const num = parseFloat(exp)
+    if (isNaN(num) || num === 0) return 'No Experience'
+    const years = Math.floor(num)
+    const months = Math.round((num - years) * 12)
+    if (years === 0) {
+      return `${months} Month${months > 1 ? 's' : ''}`
+    } else if (months === 0) {
+      return `${years} Year${years > 1 ? 's' : ''}`
+    } else {
+      return `${years} Year${years > 1 ? 's' : ''} ${months} Month${months > 1 ? 's' : ''}`
+    }
+  }
+
   // Auth state
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null)
 
   // Search/Filter states
   const [city, setCity] = useState('')
+  const [stateFilter, setStateFilter] = useState('')
   const [subject, setSubject] = useState('')
   const [standard, setStandard] = useState('')
   const [maxFees, setMaxFees] = useState('')
@@ -188,6 +217,21 @@ export default function App() {
     }
   }, [useGeo])
 
+  // Password view visibility timer (Item 1.1)
+  const triggerPasswordVisibility = (setter) => {
+    setter(true)
+    setTimeout(() => {
+      setter(false)
+    }, 1500)
+  }
+
+  // Enforce authentication view lockout wall (Item 9)
+  useEffect(() => {
+    if (!token && currentView !== 'login' && currentView !== 'register') {
+      setCurrentView('login')
+    }
+  }, [token, currentView])
+
   // Reset notifications
   const clearMessages = () => {
     setErrorMsg('')
@@ -225,7 +269,7 @@ export default function App() {
     setLoading(true)
     clearMessages()
     try {
-      let url = `/api/tutors/search?city=${encodeURIComponent(city)}&subject=${encodeURIComponent(subject)}&standard=${encodeURIComponent(standard)}`
+      let url = `/api/tutors/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(stateFilter)}&subject=${encodeURIComponent(subject)}&standard=${encodeURIComponent(standard)}`
       if (maxFees) url += `&fees=${maxFees}`
       if (minExp) url += `&experience=${minExp}`
       if (availabilityDay) url += `&availability=${availabilityDay}`
@@ -257,6 +301,8 @@ export default function App() {
           experience: data.experience || '',
           fees: data.fees || '',
           city: data.city || '',
+          state: data.state || '',
+          isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
           address: data.address || '',
           latitude: data.latitude || '',
           longitude: data.longitude || '',
@@ -339,7 +385,32 @@ export default function App() {
     }
   }
 
-  // Load Tutor Bookings
+  // Request Account Deactivation (Item 13)
+  const handleRequestDeactivation = async () => {
+    if (window.confirm("Are you sure you want to request account deactivation? This will notify the admin to deactivate your account.")) {
+      setLoading(true)
+      clearMessages()
+      try {
+        const res = await fetchWithAuth('/api/reports', {
+          method: 'POST',
+          body: JSON.stringify({
+            tutorId: tutorProfile.id || user.id, // Fallback if tutorProfile.id isn't populated
+            reason: `DEACTIVATION_REQUEST: Tutor ${user.name} (${user.email}) is requesting account deactivation.`
+          })
+        })
+        if (res.ok) {
+          setSuccessMsg("Deactivation request submitted successfully to the admin.")
+        } else {
+          const err = await res.json()
+          setErrorMsg(err.error || "Failed to submit deactivation request.")
+        }
+      } catch (err) {
+        setErrorMsg("Error submitting deactivation request.")
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
   const loadTutorBookings = async () => {
     try {
       const res = await fetchWithAuth('/api/bookings/tutor')
@@ -511,7 +582,7 @@ export default function App() {
       const payload = {
         ...tutorProfile,
         fees: tutorProfile.fees ? parseFloat(tutorProfile.fees) : null,
-        experience: tutorProfile.experience ? parseInt(tutorProfile.experience) : null,
+        experience: tutorProfile.experience ? parseFloat(tutorProfile.experience) : null,
         latitude: tutorProfile.latitude ? parseFloat(tutorProfile.latitude) : null,
         longitude: tutorProfile.longitude ? parseFloat(tutorProfile.longitude) : null,
         availabilities: formattedAvails
@@ -803,13 +874,20 @@ export default function App() {
     const password = e.target.password.value
     const phone = e.target.phone.value
     const role = e.target.role.value
-    const profileImage = e.target.profileImage.value
+    const gender = e.target.gender.value
+    const linkedinUrl = e.target.linkedinUrl.value
+
+    const payload = { name, email, password, phone, role, gender, linkedinUrl }
+    if (role === 'GUARDIAN') {
+      payload.childGender = e.target.childGender.value
+      payload.numberOfChildren = parseInt(e.target.numberOfChildren.value, 10)
+    }
 
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, phone, role, profileImage })
+        body: JSON.stringify(payload)
       })
 
       const data = await res.json()
@@ -985,6 +1063,21 @@ export default function App() {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">State</label>
+                  <div style={{ position: 'relative' }}>
+                    <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Bihar" 
+                      value={stateFilter} 
+                      onChange={e => setStateFilter(e.target.value)} 
+                      className="form-input" 
+                      style={{ paddingLeft: '38px' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Subject</label>
                   <select value={subject} onChange={e => setSubject(e.target.value)} className="form-select">
                     <option value="">All Subjects</option>
@@ -1007,7 +1100,7 @@ export default function App() {
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Max Monthly Fees (₹)</label>
                   <div style={{ position: 'relative' }}>
-                    <DollarSign size={18} style={{ position: 'absolute', left: '12px', top: '15px', color: 'var(--text-muted)' }} />
+                    <IndianRupee size={18} style={{ position: 'absolute', left: '12px', top: '15px', color: 'var(--text-muted)' }} />
                     <input 
                       type="number" 
                       placeholder="e.g. 5000" 
@@ -1057,118 +1150,146 @@ export default function App() {
                   <span style={{ color: 'var(--primary)', cursor: 'pointer' }} onClick={() => { setLatitude(null); setLongitude(null); setUseGeo(false); }}>Reset GPS</span>
                 </div>
               )}
-            </div>
 
-            {/* Results Section */}
-            <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Search Results ({tutors.length})</h2>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Showing verified nearby tutors</span>
-            </div>
-
-            {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '60px 0' }}>
-                <div className="pulse-glow" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--grad-hero)', animation: 'pulseGlow 1.5s infinite' }}></div>
-                <span style={{ color: 'var(--text-secondary)' }}>Retrieving nearby tutors...</span>
+              {/* 3-way Availability directory filter (Item 15) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '20px', padding: '16px 0 0 0', borderTop: '1px solid var(--border-color)', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tutor Availability:</span>
+                <select 
+                  value={availabilityFilter} 
+                  onChange={e => setAvailabilityFilter(e.target.value)} 
+                  className="form-select" 
+                  style={{ maxWidth: '240px', padding: '8px 12px', fontSize: '14px', borderRadius: '8px' }}
+                >
+                  <option value="ALL">Show All Tutors</option>
+                  <option value="AVAILABLE">Show Only Available Tutors</option>
+                  <option value="UNAVAILABLE">Show Not Available Tutors</option>
+                </select>
               </div>
-            ) : tutors.length === 0 ? (
-              <div className="glass-panel" style={{ padding: '60px 0', textAlign: 'center', borderRadius: '16px' }}>
-                <Search size={40} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
-                <h3>No Tutors Found</h3>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '8px auto 0' }}>
-                  Try widening your filters, searching for a different city, or resetting the proximity radius.
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
-                {tutors.map(tp => (
-                  <div key={tp.id} className="glow-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '380px' }}>
-                    <div style={{ padding: '24px' }}>
-                      
-                      {/* Card Header: Avatar & Base info */}
-                      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                        <img 
-                          src={tp.user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${tp.user.email}`} 
-                          alt={tp.user.name} 
-                          style={{ width: '64px', height: '64px', borderRadius: '16px', objectFit: 'cover', border: '1px solid var(--border-color)' }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <h3 style={{ fontSize: '17px', fontWeight: 700 }}>{tp.user.name}</h3>
-                            {tp.isVerified && (
-                              <span style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '2px' }} title="Verified Tutor Profile">
-                                <Shield size={16} fill="var(--primary-glow)" />
-                              </span>
-                            )}
-                          </div>
+            </div>            {/* Results Section */}
+            {(() => {
+              const filteredTutors = tutors.filter(t => {
+                if (availabilityFilter === 'AVAILABLE') return t.isAvailable === true
+                if (availabilityFilter === 'UNAVAILABLE') return t.isAvailable === false
+                return true
+              })
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                            <span className="badge badge-success" style={{ fontSize: '9px', padding: '2px 6px' }}>{tp.teachingMode}</span>
-                            {/* Ratings aggregates */}
-                            <span style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--warning)' }}>
-                              <Star size={13} fill="currentColor" /> {tp.averageRating?.toFixed(1) || '0.0'} ({tp.reviewCount || 0})
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '12px', marginTop: '6px' }}>
-                            <MapPin size={13} />
-                            <span>{tp.city || 'Location unspecified'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Bio snippet */}
-                      <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '42px', marginBottom: '16px' }}>
-                        {tp.about || 'This tutor has not filled out their introduction details yet.'}
-                      </p>
-
-                      {/* Stats Grid: Exp, Fees */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px' }}>
-                        <div>
-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Experience</span>
-                          <span style={{ fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Award size={14} color="var(--primary)" /> {tp.experience ? `${tp.experience} Years` : 'N/A'}
-                          </span>
-                        </div>
-                        <div>
-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Fees (Monthly)</span>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--success)' }}>
-                            {tp.fees ? `₹${tp.fees}` : 'Negotiable'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Subjects list */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
-                        {tp.subjects && tp.subjects.slice(0, 3).map(sub => (
-                          <span key={sub.id} className="badge badge-primary" style={{ fontSize: '10px' }}>{sub.name}</span>
-                        ))}
-                        {tp.subjects && tp.subjects.length > 3 && (
-                          <span className="badge badge-secondary" style={{ fontSize: '10px' }}>+{tp.subjects.length - 3} More</span>
-                        )}
-                      </div>
-
-                      {/* Standards list */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {tp.standards && tp.standards.slice(0, 3).map(std => (
-                          <span key={std.id} className="badge badge-secondary" style={{ fontSize: '10px' }}>{std.className}</span>
-                        ))}
-                      </div>
-
-                    </div>
-
-                    {/* Card Action footer */}
-                    <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        {tp.qualification || 'No Degree Listed'}
-                      </span>
-                      <button onClick={() => handleViewTutor(tp)} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '6px' }}>
-                        View Profile <ChevronRight size={14} />
-                      </button>
-                    </div>
+              return (
+                <>
+                  <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Search Results ({filteredTutors.length})</h2>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Showing verified nearby tutors</span>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  {loading ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '60px 0' }}>
+                      <div className="pulse-glow" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--grad-hero)', animation: 'pulseGlow 1.5s infinite' }}></div>
+                      <span style={{ color: 'var(--text-secondary)' }}>Retrieving nearby tutors...</span>
+                    </div>
+                  ) : filteredTutors.length === 0 ? (
+                    <div className="glass-panel" style={{ padding: '60px 0', textAlign: 'center', borderRadius: '16px' }}>
+                      <Search size={40} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
+                      <h3>No Tutors Found</h3>
+                      <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '8px auto 0' }}>
+                        Try widening your filters, searching for a different city, or resetting the proximity radius.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
+                      {filteredTutors.map(tp => (
+                        <div key={tp.id} className="glow-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '380px' }}>
+                          <div style={{ padding: '24px' }}>
+                            
+                            {/* Card Header: Avatar & Base info */}
+                            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                              <img 
+                                src={tp.user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${tp.user.email}`} 
+                                alt={tp.user.name} 
+                                style={{ width: '64px', height: '64px', borderRadius: '16px', objectFit: 'cover', border: '1px solid var(--border-color)' }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <h3 style={{ fontSize: '17px', fontWeight: 700 }}>{tp.user.name}</h3>
+                                  {tp.isVerified && (
+                                    <span style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '2px' }} title="Verified Tutor Profile">
+                                      <Shield size={16} fill="var(--primary-glow)" />
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                  <span className="badge badge-success" style={{ fontSize: '9px', padding: '2px 6px' }}>{tp.teachingMode}</span>
+                                  <span className={tp.isAvailable ? "badge badge-success" : "badge-secondary badge"} style={{ fontSize: '9px', padding: '2px 6px', textTransform: 'none' }}>
+                                    {tp.isAvailable ? 'Available' : 'Unavailable'}
+                                  </span>
+                                  {/* Ratings aggregates */}
+                                  <span style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--warning)' }}>
+                                    <Star size={13} fill="currentColor" /> {tp.averageRating?.toFixed(1) || '0.0'} ({tp.reviewCount || 0})
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '12px', marginTop: '6px' }}>
+                                  <MapPin size={13} />
+                                  <span>{tp.city || 'Location unspecified'}{tp.state ? `, ${tp.state}` : ''}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Bio snippet */}
+                            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '42px', marginBottom: '16px' }}>
+                              {tp.about || 'This tutor has not filled out their introduction details yet.'}
+                            </p>
+
+                            {/* Stats Grid: Exp, Fees */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px' }}>
+                              <div>
+                                <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Experience</span>
+                                <span style={{ fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Award size={14} color="var(--primary)" /> {formatExperience(tp.experience)}
+                                </span>
+                              </div>
+                              <div>
+                                <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Fees per Child</span>
+                                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--success)' }}>
+                                  {tp.fees ? `₹${tp.fees}` : 'Negotiable'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Subjects list */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                              {tp.subjects && tp.subjects.slice(0, 3).map(sub => (
+                                <span key={sub.id} className="badge badge-primary" style={{ fontSize: '10px' }}>{sub.name}</span>
+                              ))}
+                              {tp.subjects && tp.subjects.length > 3 && (
+                                <span className="badge badge-secondary" style={{ fontSize: '10px' }}>+{tp.subjects.length - 3} More</span>
+                              )}
+                            </div>
+
+                            {/* Standards list */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {tp.standards && tp.standards.slice(0, 3).map(std => (
+                                <span key={std.id} className="badge badge-secondary" style={{ fontSize: '10px' }}>{std.className}</span>
+                              ))}
+                            </div>
+
+                          </div>
+
+                          {/* Card Action footer */}
+                          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                              {tp.qualification || 'No Degree Listed'}
+                            </span>
+                            <button onClick={() => handleViewTutor(tp)} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '6px' }}>
+                              View Profile <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         )}
 
@@ -1209,7 +1330,7 @@ export default function App() {
                           <Star size={18} fill="currentColor" /> {selectedTutor.averageRating?.toFixed(1) || '0.0'} ({selectedTutor.reviewCount || 0} reviews)
                         </span>
                         <span style={{ color: 'var(--text-muted)' }}>|</span>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Experience: <strong>{selectedTutor.experience || 0} Years</strong></span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Experience: <strong>{formatExperience(selectedTutor.experience)}</strong></span>
                       </div>
 
                       <p style={{ color: 'var(--text-secondary)', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1243,7 +1364,7 @@ export default function App() {
                       <h4 style={{ fontSize: '14px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Teaching Experience</h4>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Clock size={18} color="var(--primary)" />
-                        <span style={{ fontSize: '16px', fontWeight: 600 }}>{selectedTutor.experience ? `${selectedTutor.experience} Years` : 'Not Specified'}</span>
+                        <span style={{ fontSize: '16px', fontWeight: 600 }}>{formatExperience(selectedTutor.experience)}</span>
                       </div>
                     </div>
                   </div>
@@ -1510,7 +1631,22 @@ export default function App() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input type="password" name="password" required placeholder="••••••••" className="form-input" />
+                  <div style={{ position: 'relative' }}>
+                    <input 
+                      type={showLoginPassword ? "text" : "password"} 
+                      name="password" 
+                      required 
+                      placeholder="••••••••" 
+                      className="form-input" 
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <span 
+                      onClick={() => triggerPasswordVisibility(setShowLoginPassword)} 
+                      style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                    >
+                      {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </span>
+                  </div>
                 </div>
                 
                 <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>
@@ -1536,6 +1672,19 @@ export default function App() {
 
               <form onSubmit={handleRegister}>
                 <div className="form-group">
+                  <label className="form-label">Join As</label>
+                  <select 
+                    name="role" 
+                    className="form-select" 
+                    value={registerRole}
+                    onChange={e => setRegisterRole(e.target.value)}
+                  >
+                    <option value="GUARDIAN">Guardian (Looking for Tutor)</option>
+                    <option value="TUTOR">Tutor (Looking to Teach)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
                   <label className="form-label">Full Name</label>
                   <input type="text" name="name" required placeholder="e.g. Rahul Kumar" className="form-input" />
                 </div>
@@ -1547,7 +1696,22 @@ export default function App() {
 
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input type="password" name="password" required placeholder="••••••••" className="form-input" />
+                  <div style={{ position: 'relative' }}>
+                    <input 
+                      type={showRegisterPassword ? "text" : "password"} 
+                      name="password" 
+                      required 
+                      placeholder="••••••••" 
+                      className="form-input" 
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <span 
+                      onClick={() => triggerPasswordVisibility(setShowRegisterPassword)} 
+                      style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                    >
+                      {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -1556,17 +1720,37 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Profile Image URL (Optional)</label>
-                  <input type="text" name="profileImage" placeholder="https://image-link.com" className="form-input" />
+                  <label className="form-label">Gender</label>
+                  <select name="gender" required className="form-select">
+                    <option value="">Select Gender</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Join As</label>
-                  <select name="role" className="form-select" defaultValue="GUARDIAN">
-                    <option value="GUARDIAN">Guardian (Looking for Tutor)</option>
-                    <option value="TUTOR">Tutor (Looking to Teach)</option>
-                  </select>
+                  <label className="form-label">LinkedIn URL (Optional)</label>
+                  <input type="url" name="linkedinUrl" placeholder="https://linkedin.com/in/username" className="form-input" />
                 </div>
+
+                {registerRole === 'GUARDIAN' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Sex of Child</label>
+                      <select name="childGender" required className="form-select">
+                        <option value="">Select Gender</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Number of Children</label>
+                      <input type="number" name="numberOfChildren" required min="1" defaultValue="1" placeholder="e.g. 1" className="form-input" />
+                    </div>
+                  </>
+                )}
 
                 <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}
@@ -1655,28 +1839,32 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Profile Image URL</label>
-                    <input 
-                      type="text" 
-                      value={guardianProfile.profileImage} 
-                      onChange={e => setGuardianProfile({ ...guardianProfile, profileImage: e.target.value })} 
-                      className="form-input" 
-                    />
-                  </div>
-
-                  <div className="form-group">
                     <label className="form-label">Change Password (Leave blank to keep current)</label>
-                    <input 
-                      type="password" 
-                      placeholder="New password" 
-                      value={guardianProfile.password} 
-                      onChange={e => setGuardianProfile({ ...guardianProfile, password: e.target.value })} 
-                      className="form-input" 
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type={showProfilePassword ? "text" : "password"} 
+                        placeholder="New password" 
+                        value={guardianProfile.password} 
+                        onChange={e => setGuardianProfile({ ...guardianProfile, password: e.target.value })} 
+                        className="form-input" 
+                        style={{ paddingRight: '40px' }}
+                      />
+                      <span 
+                        onClick={() => triggerPasswordVisibility(setShowProfilePassword)} 
+                        style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                      >
+                        {showProfilePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </span>
+                    </div>
                   </div>
 
-                  <button type="submit" className="btn btn-primary" style={{ marginTop: '16px' }} disabled={loading}>
-                    {loading ? 'Saving...' : 'Update Settings'}
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary" 
+                    style={{ width: '100%', marginTop: '24px', padding: '14px' }} 
+                    disabled={loading}
+                  >
+                    {loading ? 'Saving...' : 'Save All Changes'}
                   </button>
                 </form>
               </div>
@@ -1709,7 +1897,8 @@ export default function App() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
+            <form onSubmit={handleSaveTutorProfile}>
+              <div className="responsive-grid-2-1" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
               
               {/* Left Column Form: Basic info, subjects, classes */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1718,7 +1907,6 @@ export default function App() {
                 <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
                   <h3 style={{ fontSize: '20px', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Professional Information</h3>
                   
-                  <form onSubmit={handleSaveTutorProfile}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label">Highest Qualification</label>
@@ -1736,6 +1924,7 @@ export default function App() {
                         <input 
                           type="number" 
                           placeholder="e.g. 5" 
+                          step="0.1" 
                           value={tutorProfile.experience} 
                           onChange={e => setTutorProfile({ ...tutorProfile, experience: e.target.value })} 
                           className="form-input" 
@@ -1745,7 +1934,7 @@ export default function App() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Monthly Fees (₹)</label>
+                        <label className="form-label">Monthly Fees per Child (₹)</label>
                         <input 
                           type="number" 
                           placeholder="e.g. 3500" 
@@ -1769,7 +1958,35 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* Tutor Availability Status toggle switch (Item 7) */}
                     <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <label className="form-label">Tutor Availability Status</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+                        <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={tutorProfile.isAvailable} 
+                            onChange={e => setTutorProfile({ ...tutorProfile, isAvailable: e.target.checked })} 
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span style={{
+                            position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                            backgroundColor: tutorProfile.isAvailable ? 'var(--success)' : 'var(--text-muted)',
+                            transition: '.4s', borderRadius: '34px'
+                          }}>
+                            <span style={{
+                              position: 'absolute', content: '""', height: '18px', width: '18px', left: tutorProfile.isAvailable ? '28px' : '4px', bottom: '4px',
+                              backgroundColor: 'white', transition: '.4s', borderRadius: '50%'
+                            }} />
+                          </span>
+                        </label>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: tutorProfile.isAvailable ? 'var(--success)' : 'var(--text-secondary)' }}>
+                          {tutorProfile.isAvailable ? 'Available for Tuition' : 'Not Available (Inactive)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">About Me (Bio)</label>
                       <textarea 
                         placeholder="Write about your tutoring style..." 
@@ -1778,11 +1995,6 @@ export default function App() {
                         className="form-textarea" 
                       />
                     </div>
-
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px' }} disabled={loading}>
-                      {loading ? 'Saving Changes...' : 'Save Profile Details'}
-                    </button>
-                  </form>
                 </div>
 
                 {/* Booking Requests List */}
@@ -1869,13 +2081,42 @@ export default function App() {
               {/* Right Column: Location coordinate finder & Availability hours & Verification documents */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
+                {/* Account Details & Deactivation Request (Item 13) */}
+                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', textAlign: 'center' }}>
+                  <img 
+                    src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${user.email}`} 
+                    alt={user.name} 
+                    style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)', marginBottom: '16px' }}
+                  />
+                  <h3 style={{ fontSize: '18px', marginBottom: '4px' }}>{user.name}</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>{user.email}</p>
+                  
+                  {user.linkedinUrl && (
+                    <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+                      <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>LinkedIn Profile</span>
+                      <a href={user.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                        {user.linkedinUrl}
+                      </a>
+                    </div>
+                  )}
+
+                  <button 
+                    type="button" 
+                    onClick={handleRequestDeactivation} 
+                    className="btn btn-danger" 
+                    style={{ width: '100%', fontSize: '13px', padding: '10px 14px' }}
+                  >
+                    Request Account Deactivation
+                  </button>
+                </div>
+
                 {/* Tutor Verification submission */}
                 <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
                   <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Shield size={18} color="var(--primary)" /> Profile Verification
                   </h3>
                   
-                  <form onSubmit={handleSaveVerificationDocs}>
+                  <div>
                     <div className="form-group">
                       <label className="form-label">ID Proof URL (Aadhar/Passport)</label>
                       <input 
@@ -1910,10 +2151,15 @@ export default function App() {
                       />
                     </div>
 
-                    <button type="submit" className="btn btn-secondary" style={{ width: '100%', border: '1px solid var(--primary)', color: 'var(--primary)' }}>
+                    <button 
+                      type="button" 
+                      onClick={handleSaveVerificationDocs} 
+                      className="btn btn-secondary" 
+                      style={{ width: '100%', border: '1px solid var(--primary)', color: 'var(--primary)' }}
+                    >
                       Submit Documents
                     </button>
-                  </form>
+                  </div>
                 </div>
 
                 {/* Geolocation Coordinates setter */}
@@ -1927,6 +2173,17 @@ export default function App() {
                       placeholder="e.g. Patna" 
                       value={tutorProfile.city} 
                       onChange={e => setTutorProfile({ ...tutorProfile, city: e.target.value })} 
+                      className="form-input" 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">State</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Bihar" 
+                      value={tutorProfile.state} 
+                      onChange={e => setTutorProfile({ ...tutorProfile, state: e.target.value })} 
                       className="form-input" 
                     />
                   </div>
@@ -2050,7 +2307,19 @@ export default function App() {
               </div>
 
             </div>
-          </div>
+
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ minWidth: '320px', padding: '16px 48px', fontSize: '16px', boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)' }}
+                disabled={loading}
+              >
+                {loading ? 'Saving Changes...' : 'Save All Profile Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
         )}
 
         {/* VIEW: Admin Dashboard Panel */}
@@ -2452,32 +2721,29 @@ export default function App() {
 
                         <div className="form-group">
                           <label className="form-label">Password {editingUser && '(Leave blank to keep unchanged)'}</label>
-                          <input 
-                            type="password" 
-                            value={editingUser ? (editingUser.password || '') : newUserForm.password} 
-                            onChange={e => {
-                              if (editingUser) setEditingUser({ ...editingUser, password: e.target.value });
-                              else setNewUserForm({ ...newUserForm, password: e.target.value });
-                            }} 
-                            className="form-input" 
-                            placeholder={editingUser ? '••••••••' : 'Password'} 
-                            required={!editingUser}
-                          />
+                          <div style={{ position: 'relative' }}>
+                            <input 
+                              type={showAdminPassword ? "text" : "password"} 
+                              value={editingUser ? (editingUser.password || '') : newUserForm.password} 
+                              onChange={e => {
+                                if (editingUser) setEditingUser({ ...editingUser, password: e.target.value });
+                                else setNewUserForm({ ...newUserForm, password: e.target.value });
+                              }} 
+                              className="form-input" 
+                              style={{ paddingRight: '40px' }}
+                              placeholder={editingUser ? '••••••••' : 'Password'} 
+                              required={!editingUser}
+                            />
+                            <span 
+                              onClick={() => triggerPasswordVisibility(setShowAdminPassword)} 
+                              style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                            >
+                              {showAdminPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="form-group">
-                          <label className="form-label">Profile Image URL</label>
-                          <input 
-                            type="text" 
-                            value={editingUser ? (editingUser.profileImage || '') : newUserForm.profileImage} 
-                            onChange={e => {
-                              if (editingUser) setEditingUser({ ...editingUser, profileImage: e.target.value });
-                              else setNewUserForm({ ...newUserForm, profileImage: e.target.value });
-                            }} 
-                            className="form-input" 
-                            placeholder="https://image.com/avatar.jpg"
-                          />
-                        </div>
+
 
                         <div className="form-group">
                           <label className="form-label">Role</label>

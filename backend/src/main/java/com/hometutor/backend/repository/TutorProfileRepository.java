@@ -21,6 +21,7 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
             "LEFT JOIN standards std ON tst.standard_id = std.id " +
             "LEFT JOIN availabilities av ON tp.id = av.tutor_id " +
             "WHERE (:city IS NULL OR :city = '' OR LOWER(tp.city) = LOWER(:city)) " +
+            "  AND (:state IS NULL OR :state = '' OR LOWER(tp.state) = LOWER(:state)) " +
             "  AND (:subject IS NULL OR :subject = '' OR LOWER(s.name) = LOWER(:subject)) " +
             "  AND (:standard IS NULL OR :standard = '' OR LOWER(std.class_name) = LOWER(:standard)) " +
             "  AND (:maxFees IS NULL OR tp.fees <= :maxFees) " +
@@ -34,10 +35,11 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
             "GROUP BY tp.id", nativeQuery = true)
     List<TutorProfile> searchTutors(
             @Param("city") String city,
+            @Param("state") String state,
             @Param("subject") String subject,
             @Param("standard") String standard,
             @Param("maxFees") BigDecimal maxFees,
-            @Param("minExperience") Integer minExperience,
+            @Param("minExperience") Double minExperience,
             @Param("availabilityDay") String availabilityDay,
             @Param("latitude") Double latitude,
             @Param("longitude") Double longitude,

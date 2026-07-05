@@ -115,17 +115,18 @@ public class TutorController {
     @GetMapping("/search")
     public ResponseEntity<List<TutorProfile>> searchTutors(
             @RequestParam(required = false) String city,
+            @RequestParam(required = false) String state,
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String standard,
             @RequestParam(required = false) BigDecimal fees,
-            @RequestParam(required = false) Integer experience,
+            @RequestParam(required = false) Double experience,
             @RequestParam(required = false) String availability,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Double radius
     ) {
         List<TutorProfile> results = tutorService.searchTutors(
-                city, subject, standard, fees, experience, availability, latitude, longitude, radius
+                city, state, subject, standard, fees, experience, availability, latitude, longitude, radius
         );
         return ResponseEntity.ok(results);
     }

@@ -64,6 +64,10 @@ public class TutorService {
         profile.setExperience(request.getExperience());
         profile.setFees(request.getFees());
         profile.setCity(request.getCity());
+        profile.setState(request.getState());
+        if (request.getIsAvailable() != null) {
+            profile.setIsAvailable(request.getIsAvailable());
+        }
         profile.setAddress(request.getAddress());
         profile.setLatitude(request.getLatitude());
         profile.setLongitude(request.getLongitude());
@@ -113,11 +117,11 @@ public class TutorService {
         tutorProfileRepository.deleteById(id);
     }
 
-    public List<TutorProfile> searchTutors(String city, String subject, String standard, BigDecimal maxFees,
-                                          Integer minExperience, String availabilityDay, Double latitude,
-                                          Double longitude, Double radius) {
+    public List<TutorProfile> searchTutors(String city, String state, String subject, String standard, BigDecimal maxFees,
+                                           Double minExperience, String availabilityDay, Double latitude,
+                                           Double longitude, Double radius) {
         return populateStats(tutorProfileRepository.searchTutors(
-                city, subject, standard, maxFees, minExperience, availabilityDay, latitude, longitude, radius
+                city, state, subject, standard, maxFees, minExperience, availabilityDay, latitude, longitude, radius
         ));
     }
 

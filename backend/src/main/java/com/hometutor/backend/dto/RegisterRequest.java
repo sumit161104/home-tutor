@@ -7,6 +7,10 @@ public class RegisterRequest {
     private String phone;
     private String role; // "GUARDIAN" or "TUTOR"
     private String profileImage;
+    private String gender;
+    private String linkedinUrl;
+    private String childGender;
+    private Integer numberOfChildren;
 
     public RegisterRequest() {}
 
@@ -56,5 +60,37 @@ public class RegisterRequest {
 
     public void setProfileImage(String profileImage) {
         this.profileImage = profileImage;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getLinkedinUrl() {
+        return linkedinUrl;
+    }
+
+    public void setLinkedinUrl(String linkedinUrl) {
+        this.linkedinUrl = linkedinUrl;
+    }
+
+    public String getChildGender() {
+        return childGender;
+    }
+
+    public void setChildGender(String childGender) {
+        this.childGender = childGender;
+    }
+
+    public Integer getNumberOfChildren() {
+        return numberOfChildren;
+    }
+
+    public void setNumberOfChildren(Integer numberOfChildren) {
+        this.numberOfChildren = numberOfChildren;
     }
 }
