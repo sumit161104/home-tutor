@@ -310,6 +310,73 @@ export default function App() {
     }
   }, [token, currentView])
 
+  // Synchronize state -> URL hash for back button navigation
+  useEffect(() => {
+    const currentHash = window.location.hash;
+    let expectedHash = '#/search';
+    if (currentView === 'login') expectedHash = '#/login';
+    else if (currentView === 'register') expectedHash = '#/register';
+    else if (currentView === 'tutor-dashboard') expectedHash = '#/tutor-dashboard';
+    else if (currentView === 'guardian-dashboard') expectedHash = '#/guardian-dashboard';
+    else if (currentView === 'admin-dashboard') expectedHash = '#/admin-dashboard';
+    else if (currentView === 'detail' && selectedTutor) expectedHash = `#/tutor/${selectedTutor.id}`;
+
+    if (currentHash !== expectedHash) {
+      window.location.hash = expectedHash;
+    }
+  }, [currentView, selectedTutor])
+
+  // Synchronize URL hash -> state for back button navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (!hash || hash === '#/' || hash === '#/search') {
+        if (currentView !== 'search') {
+          setCurrentView('search');
+          setSelectedTutor(null);
+        }
+      } else if (hash === '#/login') {
+        if (currentView !== 'login') setCurrentView('login');
+      } else if (hash === '#/register') {
+        if (currentView !== 'register') setCurrentView('register');
+      } else if (hash === '#/tutor-dashboard') {
+        if (currentView !== 'tutor-dashboard') setCurrentView('tutor-dashboard');
+      } else if (hash === '#/guardian-dashboard') {
+        if (currentView !== 'guardian-dashboard') setCurrentView('guardian-dashboard');
+      } else if (hash === '#/admin-dashboard') {
+        if (currentView !== 'admin-dashboard') setCurrentView('admin-dashboard');
+      } else if (hash.startsWith('#/tutor/')) {
+        const id = parseInt(hash.replace('#/tutor/', ''), 10);
+        if (currentView !== 'detail' || !selectedTutor || selectedTutor.id !== id) {
+          const tutor = tutors.find(t => t.id === id);
+          if (tutor) {
+            setSelectedTutor(tutor);
+            setCurrentView('detail');
+          } else {
+            fetch(`/api/tutors/${id}`)
+              .then(res => {
+                if (res.ok) return res.json();
+                throw new Error();
+              })
+              .then(data => {
+                setSelectedTutor(data);
+                setCurrentView('detail');
+              })
+              .catch(() => {
+                setCurrentView('search');
+                setSelectedTutor(null);
+              });
+          }
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [tutors, currentView, selectedTutor])
+
   // Reset notifications
   const clearMessages = () => {
     setErrorMsg('')
@@ -1431,7 +1498,7 @@ export default function App() {
               &larr; Back to Listings
             </button>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
+            <div className="responsive-grid-2-1" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
               
               {/* Left Column: Profile Bio & Info */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1519,7 +1586,7 @@ export default function App() {
                 {(selectedTutor.latitude || selectedTutor.longitude) && (
                   <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
                     <h3 style={{ fontSize: '20px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Location Coordinates</h3>
-                    <div style={{ display: 'flex', gap: '24px', fontSize: '15px', color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', fontSize: '15px', color: 'var(--text-secondary)' }}>
                       <div>Latitude: <strong style={{ color: 'var(--text-primary)' }}>{selectedTutor.latitude}</strong></div>
                       <div>Longitude: <strong style={{ color: 'var(--text-primary)' }}>{selectedTutor.longitude}</strong></div>
                       <a 
