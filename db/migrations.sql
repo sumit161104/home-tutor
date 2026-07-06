@@ -80,3 +80,6 @@ ALTER TABLE reports ALTER COLUMN tutor_id DROP NOT NULL;
 -- 11. Add user_id to tutor_verifications for guardian verification support
 ALTER TABLE tutor_verifications ADD COLUMN IF NOT EXISTS user_id INTEGER;
 ALTER TABLE tutor_verifications ADD CONSTRAINT fk_verification_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+-- 12. Make tutor_id nullable in tutor_verifications to support Guardian verification rows
+ALTER TABLE tutor_verifications ALTER COLUMN tutor_id DROP NOT NULL;

@@ -5,14 +5,16 @@ public class AuthResponse {
     private Long id;
     private String name;
     private String email;
+    private String phone;
     private String role;
     private String profileImage;
 
-    public AuthResponse(String token, Long id, String name, String email, String role, String profileImage) {
+    public AuthResponse(String token, Long id, String name, String email, String phone, String role, String profileImage) {
         this.token = token;
         this.id = id;
         this.name = name;
         this.email = email;
+        this.phone = phone;
         this.role = role;
         this.profileImage = profileImage;
     }
@@ -47,6 +49,14 @@ public class AuthResponse {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getRole() {

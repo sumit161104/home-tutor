@@ -172,6 +172,7 @@ export default function App() {
     approved: true
   })
   const [adminTab, setAdminTab] = useState('stats') // 'stats' | 'verifications' | 'reports' | 'users'
+  const [userSearchQuery, setUserSearchQuery] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [rejectingVerId, setRejectingVerId] = useState(null)
   const availableStates = Array.from(new Set(allTutors.map(t => t.state).filter(Boolean))).sort()
@@ -217,6 +218,35 @@ export default function App() {
     loadLookups()
     handleSearch()
   }, [])
+
+  // Load fresh user details if token is present
+  useEffect(() => {
+    const fetchFreshUser = async () => {
+      if (token) {
+        try {
+          const res = await fetchWithAuth('/api/auth/me')
+          if (res.ok) {
+            const data = await res.json()
+            const freshUser = { 
+              id: data.id, 
+              name: data.name, 
+              email: data.email, 
+              phone: data.phone, 
+              role: data.role, 
+              profileImage: data.profileImage,
+              state: data.state,
+              city: data.city
+            }
+            setUser(freshUser)
+            localStorage.setItem('user', JSON.stringify(freshUser))
+          }
+        } catch (err) {
+          console.error('Error loading user profile: ', err)
+        }
+      }
+    }
+    fetchFreshUser()
+  }, [token])
 
   // Check user role on startup to load dashboard elements
   useEffect(() => {
@@ -288,9 +318,17 @@ export default function App() {
 
   const handleLoginSuccess = (data) => {
     setToken(data.token)
-    setUser({ id: data.id, name: data.name, email: data.email, role: data.role, profileImage: data.profileImage })
+    const userData = { 
+      id: data.id, 
+      name: data.name, 
+      email: data.email, 
+      phone: data.phone, 
+      role: data.role, 
+      profileImage: data.profileImage 
+    }
+    setUser(userData)
     localStorage.setItem('token', data.token)
-    localStorage.setItem('user', JSON.stringify({ id: data.id, name: data.name, email: data.email, role: data.role, profileImage: data.profileImage }))
+    localStorage.setItem('user', JSON.stringify(userData))
     clearMessages()
     
     if (data.role === 'TUTOR') {
@@ -1135,7 +1173,7 @@ export default function App() {
               {/* Advanced Search Form */}
               <form onSubmit={handleSearch} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">State</label>
+                  <label className="form-label">State/UT</label>
                   <div style={{ position: 'relative' }}>
                     <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', zIndex: 10, color: 'var(--text-muted)' }} />
                     <select 
@@ -1147,7 +1185,7 @@ export default function App() {
                       className="form-select" 
                       style={{ paddingLeft: '38px' }}
                     >
-                      <option value="">All States</option>
+                      <option value="">All States/UTs</option>
                       {availableStates.map(st => (
                         <option key={st} value={st}>{st}</option>
                       ))}
@@ -1272,7 +1310,7 @@ export default function App() {
 
               return (
                 <>
-                  <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="responsive-flex-row" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                     <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Search Results ({filteredTutors.length})</h2>
                     <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Showing verified nearby tutors</span>
                   </div>
@@ -1291,7 +1329,7 @@ export default function App() {
                       </p>
                     </div>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
                       {filteredTutors.map(tp => (
                         <div key={tp.id} className="glow-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '380px' }}>
                           <div style={{ padding: '24px' }}>
@@ -1782,7 +1820,7 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">State</label>
+                  <label className="form-label">State/UT</label>
                   <input type="text" name="state" required placeholder="e.g. Bihar" className="form-input" />
                 </div>
 
@@ -1808,7 +1846,7 @@ export default function App() {
           <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
             <h1 style={{ marginBottom: '24px' }}>Guardian Profile Settings</h1>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px' }}>
+            <div className="responsive-grid-1-2" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px' }}>
               {/* Left Details sidebar */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -1818,7 +1856,7 @@ export default function App() {
                   <div className="badge badge-primary" style={{ marginBottom: '16px' }}>GUARDIAN PROFILE</div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'left', width: '100%', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
-                    <span>State: <strong>{user.state || 'Unspecified'}</strong></span>
+                    <span>State/UT: <strong>{user.state || 'Unspecified'}</strong></span>
                     <span>City: <strong>{user.city || 'Unspecified'}</strong></span>
                   </div>
 
@@ -1896,7 +1934,7 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">State</label>
+                    <label className="form-label">State/UT</label>
                     <input 
                       type="text" 
                       value={guardianProfile.state} 
@@ -1986,7 +2024,7 @@ export default function App() {
                 <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
                   <h3 style={{ fontSize: '20px', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Professional Information</h3>
                   
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    <div className="responsive-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label">Highest Qualification</label>
                         <input 
@@ -2011,7 +2049,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    <div className="responsive-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label">Monthly Fees per Child (₹)</label>
                         <input 
@@ -2249,7 +2287,7 @@ export default function App() {
                   <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Location Settings</h3>
                   
                   <div className="form-group">
-                    <label className="form-label">State</label>
+                    <label className="form-label">State/UT</label>
                     <input 
                       type="text" 
                       placeholder="e.g. Bihar" 
@@ -2281,7 +2319,7 @@ export default function App() {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div className="responsive-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Latitude</label>
                       <input 
@@ -2407,13 +2445,13 @@ export default function App() {
         {/* VIEW: Admin Dashboard Panel */}
         {currentView === 'admin-dashboard' && user && user.role === 'ADMIN' && (
           <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div className="responsive-flex-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
               <h1>Admin Dashboard Panel</h1>
               <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Welcome to Platform Operations Control</span>
             </div>
 
             {/* Admin Tabs */}
-            <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '24px' }}>
               <button 
                 onClick={() => setAdminTab('stats')} 
                 className="btn" 
@@ -2439,6 +2477,19 @@ export default function App() {
                 }}
               >
                 <Shield size={16} /> Tutor Verifications Queue
+              </button>
+              <button 
+                onClick={() => { setAdminTab('guardian-verifications'); loadAdminVerifications(); }} 
+                className="btn" 
+                style={{ 
+                  background: adminTab === 'guardian-verifications' ? 'var(--grad-hero)' : 'transparent',
+                  border: adminTab === 'guardian-verifications' ? 'none' : '1px solid var(--border-color)',
+                  color: 'white',
+                  padding: '8px 20px',
+                  borderRadius: '8px'
+                }}
+              >
+                <Shield size={16} /> Guardian Verifications Queue
               </button>
               <button 
                 onClick={() => { setAdminTab('reports'); loadAdminReports(); }} 
@@ -2504,18 +2555,18 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB CONTENT: Verifications Queue */}
+            {/* TAB CONTENT: Tutor Verifications Queue */}
             {adminTab === 'verifications' && (
               <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
-                <h3 style={{ marginBottom: '20px' }}>Document Approvals Queue ({adminVerifications.length})</h3>
+                <h3 style={{ marginBottom: '20px' }}>Tutor Approvals Queue ({adminVerifications.filter(v => v.tutorProfile != null).length})</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {adminVerifications.map(ver => {
-                    const isTutor = ver.tutorProfile != null;
-                    const userName = isTutor ? ver.tutorProfile.user.name : (ver.user ? ver.user.name : 'Unknown');
-                    const userEmail = isTutor ? ver.tutorProfile.user.email : (ver.user ? ver.user.email : '');
-                    const userRole = isTutor ? 'TUTOR' : 'GUARDIAN';
-                    const detailText = isTutor ? `Qualification: ${ver.tutorProfile.qualification}` : 'Guardian account activation request';
+                  {adminVerifications.filter(v => v.tutorProfile != null).map(ver => {
+                    const isTutor = true;
+                    const userName = ver.tutorProfile.user.name;
+                    const userEmail = ver.tutorProfile.user.email;
+                    const userRole = 'TUTOR';
+                    const detailText = `Qualification: ${ver.tutorProfile.qualification}`;
 
                     return (
                       <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'rgba(255,255,255,0.01)' }}>
@@ -2533,29 +2584,27 @@ export default function App() {
                           </span>
                         </div>
 
-                        {/* Display Doc Links (Tutors only) */}
-                        {isTutor && (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', padding: '16px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
-                            <div>
-                              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>ID Proof</span>
-                              <a href={ver.idProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <FileText size={14} /> Open ID Document
-                              </a>
-                            </div>
-                            <div>
-                              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Degree Proof</span>
-                              <a href={ver.degreeProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <FileText size={14} /> Open Degree Document
-                              </a>
-                            </div>
-                            <div>
-                              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Background Check</span>
-                              <a href={ver.backgroundCheckUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <FileText size={14} /> Open BG Document
-                              </a>
-                            </div>
+                        {/* Display Doc Links */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', padding: '16px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
+                          <div>
+                            <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>ID Proof</span>
+                            <a href={ver.idProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <FileText size={14} /> Open ID Document
+                            </a>
                           </div>
-                        )}
+                          <div>
+                            <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Degree Proof</span>
+                            <a href={ver.degreeProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <FileText size={14} /> Open Degree Document
+                            </a>
+                          </div>
+                          <div>
+                            <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Background Check</span>
+                            <a href={ver.backgroundCheckUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <FileText size={14} /> Open BG Document
+                            </a>
+                          </div>
+                        </div>
 
                         {/* Action buttons (only for PENDING status) */}
                         {ver.status === 'PENDING' && (
@@ -2600,8 +2649,86 @@ export default function App() {
                     );
                   })}
                   
-                  {adminVerifications.length === 0 && (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center' }}>No verification requests in queue.</p>
+                  {adminVerifications.filter(v => v.tutorProfile != null).length === 0 && (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center' }}>No tutor verification requests in queue.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT: Guardian Verifications Queue */}
+            {adminTab === 'guardian-verifications' && (
+              <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
+                <h3 style={{ marginBottom: '20px' }}>Guardian Approvals Queue ({adminVerifications.filter(v => v.tutorProfile == null).length})</h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {adminVerifications.filter(v => v.tutorProfile == null).map(ver => {
+                    const userName = ver.user ? ver.user.name : 'Unknown';
+                    const userEmail = ver.user ? ver.user.email : '';
+                    const userRole = 'GUARDIAN';
+                    const detailText = 'Guardian account activation request';
+
+                    return (
+                      <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'rgba(255,255,255,0.01)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+                          <div>
+                            <strong style={{ fontSize: '16px', display: 'block' }}>{userName} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>({userRole})</span></strong>
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Email: {userEmail} | {detailText}</span>
+                          </div>
+                          <span className="badge badge-secondary" style={{ 
+                            background: ver.status === 'APPROVED' ? 'var(--success-glow)' : ver.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.1)' : 'var(--primary-glow)',
+                            color: ver.status === 'APPROVED' ? 'var(--success)' : ver.status === 'REJECTED' ? 'var(--danger)' : 'var(--primary)',
+                            border: ver.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255,255,255,0.1)'
+                          }}>
+                            {ver.status}
+                          </span>
+                        </div>
+
+                        {/* Action buttons (only for PENDING status) */}
+                        {ver.status === 'PENDING' && (
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => handleAdminApproveVerification(ver.id)} className="btn btn-primary" style={{ background: 'var(--success)', boxShadow: 'none', padding: '8px 16px', fontSize: '13px' }}>
+                              <Check size={14} /> Approve Account
+                            </button>
+                            
+                            {rejectingVerId !== ver.id ? (
+                              <button onClick={() => { setRejectingVerId(ver.id); setRejectionReason(''); }} className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                                Reject Submission
+                              </button>
+                            ) : (
+                              <form onSubmit={handleAdminRejectVerification} style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                                <input 
+                                  type="text" 
+                                  placeholder="Rejection reason..." 
+                                  value={rejectionReason} 
+                                  onChange={e => setRejectionReason(e.target.value)} 
+                                  className="form-input" 
+                                  style={{ padding: '8px 12px', fontSize: '13px' }}
+                                  required
+                                />
+                                <button type="submit" className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                                  Confirm Reject
+                                </button>
+                                <button type="button" onClick={() => setRejectingVerId(null)} className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                                  Cancel
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Rejection comments display */}
+                        {ver.status === 'REJECTED' && ver.rejectionReason && (
+                          <div style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '8px' }}>
+                            Rejection Reason: <strong>{ver.rejectionReason}</strong>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  {adminVerifications.filter(v => v.tutorProfile == null).length === 0 && (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center' }}>No guardian verification requests in queue.</p>
                   )}
                 </div>
               </div>
@@ -2661,6 +2788,17 @@ export default function App() {
                   </button>
                 </div>
 
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Search users by name..." 
+                    value={userSearchQuery} 
+                    onChange={e => setUserSearchQuery(e.target.value)} 
+                    className="form-input" 
+                    style={{ maxWidth: '300px', padding: '8px 12px', fontSize: '13px' }}
+                  />
+                </div>
+
                 <div className="glass-panel" style={{ padding: '24px', borderRadius: '20px' }}>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
@@ -2674,7 +2812,9 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {adminUsers.map(u => (
+                        {adminUsers
+                          .filter(u => u.name.toLowerCase().includes(userSearchQuery.toLowerCase()))
+                          .map(u => (
                           <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px' }}>
                             <td style={{ padding: '16px 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                               {renderUserAvatar(u.role, '36px', '14px')}
