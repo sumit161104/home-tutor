@@ -69,3 +69,14 @@ ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT
 
 -- 8. Alter tutor experience column to support decimal years (e.g. 1.5 years)
 ALTER TABLE tutor_profiles ALTER COLUMN experience TYPE DOUBLE PRECISION;
+
+-- 9. Add State and City fields to users table for Guardian profile
+ALTER TABLE users ADD COLUMN IF NOT EXISTS state VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+
+-- 10. Make reports tutor_id nullable for guardian deactivation requests
+ALTER TABLE reports ALTER COLUMN tutor_id DROP NOT NULL;
+
+-- 11. Add user_id to tutor_verifications for guardian verification support
+ALTER TABLE tutor_verifications ADD COLUMN IF NOT EXISTS user_id INTEGER;
+ALTER TABLE tutor_verifications ADD CONSTRAINT fk_verification_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

@@ -39,6 +39,41 @@ export default function App() {
     }
   }
 
+  // Render User Avatar Badge (T for Tutor, G for Guardian)
+  const renderUserAvatar = (role, size = '40px', fontSize = '16px') => {
+    const isTutor = role === 'TUTOR';
+    const bg = isTutor ? 'var(--primary)' : 'var(--secondary)';
+    return (
+      <div style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: bg,
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 800,
+        fontSize: fontSize,
+        fontFamily: 'var(--font-heading)',
+        border: '2px solid rgba(255,255,255,0.1)',
+        flexShrink: 0
+      }}>
+        {isTutor ? 'T' : 'G'}
+      </div>
+    )
+  }
+
+  // Format Date helper to DD/MM/YYYY
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    const parts = dateStr.split('-')
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`
+    }
+    return dateStr
+  }
+
   // Auth state
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null)
@@ -58,6 +93,7 @@ export default function App() {
 
   // Data states
   const [tutors, setTutors] = useState([])
+  const [allTutors, setAllTutors] = useState([])
   const [subjects, setSubjects] = useState([])
   const [standards, setStandards] = useState([])
   const [selectedTutor, setSelectedTutor] = useState(null)
@@ -86,8 +122,17 @@ export default function App() {
     name: '',
     phone: '',
     password: '',
-    profileImage: ''
+    profileImage: '',
+    state: '',
+    city: ''
   })
+
+  const [deactivationRequested, setDeactivationRequested] = useState(
+    localStorage.getItem(`deactivationRequested_${user?.id}`) === 'true'
+  )
+  const [guardianDeactivationRequested, setGuardianDeactivationRequested] = useState(
+    localStorage.getItem(`guardianDeactivationRequested_${user?.id}`) === 'true'
+  )
 
   // Tutor Verification Document uploads state
   const [idProofUrl, setIdProofUrl] = useState('')
@@ -129,7 +174,10 @@ export default function App() {
   const [adminTab, setAdminTab] = useState('stats') // 'stats' | 'verifications' | 'reports' | 'users'
   const [rejectionReason, setRejectionReason] = useState('')
   const [rejectingVerId, setRejectingVerId] = useState(null)
-
+  const availableStates = Array.from(new Set(allTutors.map(t => t.state).filter(Boolean))).sort()
+  const availableCities = stateFilter 
+    ? Array.from(new Set(allTutors.filter(t => t.state === stateFilter).map(t => t.city).filter(Boolean))).sort()
+    : []
   // Temporary availability addition state
   const [newAvailDay, setNewAvailDay] = useState('MONDAY')
   const [newAvailStart, setNewAvailStart] = useState('09:00')
@@ -280,6 +328,9 @@ export default function App() {
       if (res.ok) {
         const data = await res.json()
         setTutors(data)
+        if (!city && !stateFilter && !subject && !standard && !maxFees && !minExp && !availabilityDay && !radius) {
+          setAllTutors(data)
+        }
       } else {
         setErrorMsg('Failed to retrieve search results.')
       }
@@ -332,7 +383,9 @@ export default function App() {
           name: data.name || '',
           phone: data.phone || '',
           password: '',
-          profileImage: data.profileImage || ''
+          profileImage: data.profileImage || '',
+          state: data.state || '',
+          city: data.city || ''
         })
       }
     } catch (err) {
@@ -400,6 +453,36 @@ export default function App() {
         })
         if (res.ok) {
           setSuccessMsg("Deactivation request submitted successfully to the admin.")
+          setDeactivationRequested(true)
+          localStorage.setItem(`deactivationRequested_${user.id}`, 'true')
+        } else {
+          const err = await res.json()
+          setErrorMsg(err.error || "Failed to submit deactivation request.")
+        }
+      } catch (err) {
+        setErrorMsg("Error submitting deactivation request.")
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  // Request Account Deactivation for Guardian
+  const handleRequestDeactivationGuardian = async () => {
+    if (window.confirm("Are you sure you want to request account deactivation? This will notify the admin to deactivate your account.")) {
+      setLoading(true)
+      clearMessages()
+      try {
+        const res = await fetchWithAuth('/api/reports', {
+          method: 'POST',
+          body: JSON.stringify({
+            reason: `DEACTIVATION_REQUEST: Guardian ${user.name} (${user.email}) is requesting account deactivation.`
+          })
+        })
+        if (res.ok) {
+          setSuccessMsg("Deactivation request submitted successfully to the admin.")
+          setGuardianDeactivationRequested(true)
+          localStorage.setItem(`guardianDeactivationRequested_${user.id}`, 'true')
         } else {
           const err = await res.json()
           setErrorMsg(err.error || "Failed to submit deactivation request.")
@@ -618,6 +701,8 @@ export default function App() {
       if (guardianProfile.name) payload.name = guardianProfile.name
       if (guardianProfile.phone) payload.phone = guardianProfile.phone
       if (guardianProfile.profileImage) payload.profileImage = guardianProfile.profileImage
+      if (guardianProfile.state) payload.state = guardianProfile.state
+      if (guardianProfile.city) payload.city = guardianProfile.city
       if (guardianProfile.password) payload.password = guardianProfile.password
 
       const res = await fetchWithAuth('/api/guardian/profile', {
@@ -630,11 +715,18 @@ export default function App() {
         setSuccessMsg('Profile updated successfully!')
         
         // Update user state details locally
-        const updatedUser = { ...user, name: updated.name, phone: updated.phone, profileImage: updated.profileImage }
+        const updatedUser = { 
+          ...user, 
+          name: updated.name, 
+          phone: updated.phone, 
+          profileImage: updated.profileImage,
+          state: updated.state,
+          city: updated.city
+        }
         setUser(updatedUser)
         localStorage.setItem('user', JSON.stringify(updatedUser))
         
-        setGuardianProfile(prev => ({ ...prev, password: '' }))
+        setGuardianProfile(prev => ({ ...prev, password: '', state: updated.state || '', city: updated.city || '' }))
       } else {
         const err = await res.json()
         setErrorMsg(err.error || 'Failed to update profile.')
@@ -877,11 +969,10 @@ export default function App() {
     const gender = e.target.gender.value
     const linkedinUrl = e.target.linkedinUrl.value
 
-    const payload = { name, email, password, phone, role, gender, linkedinUrl }
-    if (role === 'GUARDIAN') {
-      payload.childGender = e.target.childGender.value
-      payload.numberOfChildren = parseInt(e.target.numberOfChildren.value, 10)
-    }
+    const state = e.target.state ? e.target.state.value : ''
+    const city = e.target.city ? e.target.city.value : ''
+
+    const payload = { name, email, password, phone, role, gender, linkedinUrl, state, city }
 
     try {
       const res = await fetch('/api/auth/register', {
@@ -961,7 +1052,7 @@ export default function App() {
     <div className="app-wrapper">
       {/* Navigation Bar */}
       <nav className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0, padding: '16px 0' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="container navbar-container">
           <div className="brand" onClick={() => { setCurrentView('search'); setSelectedTutor(null); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
             <div style={{ background: 'var(--grad-hero)', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <BookOpen size={22} color="white" />
@@ -969,7 +1060,7 @@ export default function App() {
             <span style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-heading)', background: 'var(--grad-hero)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>HomeTutor</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div className="navbar-links">
             <span onClick={() => { setCurrentView('search'); setSelectedTutor(null); }} style={{ cursor: 'pointer', fontWeight: 600, color: currentView === 'search' ? 'var(--primary)' : 'var(--text-secondary)' }}>Find Tutors</span>
             
             {token ? (
@@ -984,12 +1075,8 @@ export default function App() {
                 >
                   Dashboard
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderLeft: '1px solid var(--border-color)', paddingLeft: '16px' }}>
-                  <img 
-                    src={user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.email}`} 
-                    alt="avatar" 
-                    style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }}
-                  />
+                <div className="navbar-user">
+                  {renderUserAvatar(user.role, '32px', '14px')}
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{user.name}</span>
                     <span style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: 600 }}>{user.role}</span>
@@ -1048,32 +1135,42 @@ export default function App() {
               {/* Advanced Search Form */}
               <form onSubmit={handleSearch} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">City</label>
+                  <label className="form-label">State</label>
                   <div style={{ position: 'relative' }}>
-                    <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Patna" 
-                      value={city} 
-                      onChange={e => setCity(e.target.value)} 
-                      className="form-input" 
+                    <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', zIndex: 10, color: 'var(--text-muted)' }} />
+                    <select 
+                      value={stateFilter} 
+                      onChange={e => {
+                        setStateFilter(e.target.value);
+                        setCity(''); // Reset City selection when State changes
+                      }} 
+                      className="form-select" 
                       style={{ paddingLeft: '38px' }}
-                    />
+                    >
+                      <option value="">All States</option>
+                      {availableStates.map(st => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">State</label>
+                  <label className="form-label">City</label>
                   <div style={{ position: 'relative' }}>
-                    <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Bihar" 
-                      value={stateFilter} 
-                      onChange={e => setStateFilter(e.target.value)} 
-                      className="form-input" 
+                    <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', zIndex: 10, color: 'var(--text-muted)' }} />
+                    <select 
+                      value={city} 
+                      onChange={e => setCity(e.target.value)} 
+                      className="form-select" 
                       style={{ paddingLeft: '38px' }}
-                    />
+                      disabled={!stateFilter}
+                    >
+                      <option value="">All Cities</option>
+                      {availableCities.map(ct => (
+                        <option key={ct} value={ct}>{ct}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -1201,11 +1298,7 @@ export default function App() {
                             
                             {/* Card Header: Avatar & Base info */}
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                              <img 
-                                src={tp.user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${tp.user.email}`} 
-                                alt={tp.user.name} 
-                                style={{ width: '64px', height: '64px', borderRadius: '16px', objectFit: 'cover', border: '1px solid var(--border-color)' }}
-                              />
+                              {renderUserAvatar(tp.user.role || 'TUTOR', '64px', '22px')}
                               <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                   <h3 style={{ fontSize: '17px', fontWeight: 700 }}>{tp.user.name}</h3>
@@ -1229,7 +1322,7 @@ export default function App() {
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '12px', marginTop: '6px' }}>
                                   <MapPin size={13} />
-                                  <span>{tp.city || 'Location unspecified'}{tp.state ? `, ${tp.state}` : ''}</span>
+                                  <span>{tp.state || ''}{tp.state && tp.city ? `, ` : ''}{tp.city || (tp.state ? '' : 'Location unspecified')}</span>
                                 </div>
                               </div>
                             </div>
@@ -1308,11 +1401,7 @@ export default function App() {
                 {/* Main Identity Box */}
                 <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
                   <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <img 
-                      src={selectedTutor.user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${selectedTutor.user.email}`} 
-                      alt={selectedTutor.user.name} 
-                      style={{ width: '100px', height: '100px', borderRadius: '24px', objectFit: 'cover', border: '2px solid var(--primary)' }}
-                    />
+                    {renderUserAvatar('TUTOR', '100px', '36px')}
                     <div>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
                         <h1 style={{ fontSize: '30px' }}>{selectedTutor.user.name}</h1>
@@ -1334,7 +1423,7 @@ export default function App() {
                       </div>
 
                       <p style={{ color: 'var(--text-secondary)', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MapPin size={16} /> {selectedTutor.address || 'Address unspecified'}, {selectedTutor.city}
+                        <MapPin size={16} /> {selectedTutor.address || 'Address unspecified'}, {selectedTutor.state ? `${selectedTutor.state}, ` : ''}{selectedTutor.city || ''}
                       </p>
                     </div>
                   </div>
@@ -1417,11 +1506,7 @@ export default function App() {
                         <div key={r.id} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <img 
-                                src={r.guardian.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${r.guardian.email}`} 
-                                alt={r.guardian.name} 
-                                style={{ width: '28px', height: '28px', borderRadius: '50%' }}
-                              />
+                              {renderUserAvatar('GUARDIAN', '28px', '11px')}
                               <div>
                                 <strong style={{ fontSize: '14px', display: 'block' }}>{r.guardian.name}</strong>
                                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(r.createdAt).toLocaleDateString()}</span>
@@ -1569,45 +1654,7 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Dispute / Report Button */}
-                {token && user && user.role === 'GUARDIAN' && (
-                  <div style={{ textAlign: 'center' }}>
-                    {!showReportForm ? (
-                      <button 
-                        onClick={() => setShowReportForm(true)} 
-                        className="btn btn-secondary" 
-                        style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', fontSize: '13px', textDecoration: 'underline', gap: '4px' }}
-                      >
-                        <AlertTriangle size={13} /> Report concern about this tutor
-                      </button>
-                    ) : (
-                      <form onSubmit={handleSubmitReport} style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '16px', borderRadius: '12px', marginTop: '10px', textAlign: 'left' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <strong style={{ fontSize: '13px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <AlertTriangle size={14} /> Submit Report
-                          </strong>
-                          <X size={14} style={{ cursor: 'pointer' }} onClick={() => setShowReportForm(false)} />
-                        </div>
-                        
-                        <div className="form-group" style={{ marginBottom: '12px' }}>
-                          <label className="form-label" style={{ fontSize: '12px' }}>Reason for Dispute</label>
-                          <textarea 
-                            value={reportReason} 
-                            onChange={e => setReportReason(e.target.value)} 
-                            placeholder="Describe your dispute or concern..." 
-                            className="form-textarea" 
-                            style={{ minHeight: '60px', padding: '8px', fontSize: '13px' }}
-                            required
-                          />
-                        </div>
-
-                        <button type="submit" className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '4px', width: '100%' }}>
-                          Submit Dispute Report
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                )}
+                {/* Dispute / Report Button postponed for current release */}
 
               </div>
 
@@ -1734,23 +1781,15 @@ export default function App() {
                   <input type="url" name="linkedinUrl" placeholder="https://linkedin.com/in/username" className="form-input" />
                 </div>
 
-                {registerRole === 'GUARDIAN' && (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label">Sex of Child</label>
-                      <select name="childGender" required className="form-select">
-                        <option value="">Select Gender</option>
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Number of Children</label>
-                      <input type="number" name="numberOfChildren" required min="1" defaultValue="1" placeholder="e.g. 1" className="form-input" />
-                    </div>
-                  </>
-                )}
+                <div className="form-group">
+                  <label className="form-label">State</label>
+                  <input type="text" name="state" required placeholder="e.g. Bihar" className="form-input" />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">City</label>
+                  <input type="text" name="city" required placeholder="e.g. Patna" className="form-input" />
+                </div>
 
                 <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}
@@ -1772,15 +1811,33 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px' }}>
               {/* Left Details sidebar */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', textAlign: 'center' }}>
-                  <img 
-                    src={user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.email}`} 
-                    alt={user.name} 
-                    style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)', marginBottom: '16px' }}
-                  />
-                  <h3>{user.name}</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>{user.email}</p>
-                  <div className="badge badge-primary">GUARDIAN PROFILE</div>
+                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                  {renderUserAvatar('GUARDIAN', '100px', '40px')}
+                  <h3 style={{ marginTop: '16px' }}>{user.name}</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '16px' }}>{user.email}</p>
+                  <div className="badge badge-primary" style={{ marginBottom: '16px' }}>GUARDIAN PROFILE</div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'left', width: '100%', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                    <span>State: <strong>{user.state || 'Unspecified'}</strong></span>
+                    <span>City: <strong>{user.city || 'Unspecified'}</strong></span>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '20px', paddingTop: '20px', width: '100%' }}>
+                    {guardianDeactivationRequested ? (
+                      <div style={{ color: 'var(--danger)', fontWeight: 'bold', padding: '8px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', fontSize: '12px' }}>
+                        Deactivation requested to Admin
+                      </div>
+                    ) : (
+                      <button 
+                        type="button" 
+                        onClick={handleRequestDeactivationGuardian} 
+                        className="btn btn-danger" 
+                        style={{ width: '100%', fontSize: '12px', padding: '8px 12px' }}
+                      >
+                        Request Account Deactivation
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Guardian Bookings list */}
@@ -1803,7 +1860,7 @@ export default function App() {
                           </span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '11px' }}>
-                          <span>Date: {b.bookingDate}</span>
+                          <span>Date: {formatDate(b.bookingDate)}</span>
                           <span>Phone: {b.tutorProfile.user.phone}</span>
                         </div>
                       </div>
@@ -1835,6 +1892,28 @@ export default function App() {
                       value={guardianProfile.phone} 
                       onChange={e => setGuardianProfile({ ...guardianProfile, phone: e.target.value })} 
                       className="form-input" 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">State</label>
+                    <input 
+                      type="text" 
+                      value={guardianProfile.state} 
+                      onChange={e => setGuardianProfile({ ...guardianProfile, state: e.target.value })} 
+                      className="form-input" 
+                      placeholder="e.g. Bihar"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">City</label>
+                    <input 
+                      type="text" 
+                      value={guardianProfile.city} 
+                      onChange={e => setGuardianProfile({ ...guardianProfile, city: e.target.value })} 
+                      className="form-input" 
+                      placeholder="e.g. Patna"
                     />
                   </div>
 
@@ -2008,7 +2087,7 @@ export default function App() {
                       <div key={b.id} style={{ border: '1px solid var(--border-color)', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.01)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                         <div>
                           <strong style={{ fontSize: '15px', display: 'block', marginBottom: '4px' }}>{b.guardian.name}</strong>
-                          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'block' }}>Date: {b.bookingDate}</span>
+                          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'block' }}>Date: {formatDate(b.bookingDate)}</span>
                           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Contact: {b.guardian.phone} | {b.guardian.email}</span>
                         </div>
 
@@ -2082,17 +2161,14 @@ export default function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
                 {/* Account Details & Deactivation Request (Item 13) */}
-                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', textAlign: 'center' }}>
-                  <img 
-                    src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${user.email}`} 
-                    alt={user.name} 
-                    style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)', marginBottom: '16px' }}
-                  />
-                  <h3 style={{ fontSize: '18px', marginBottom: '4px' }}>{user.name}</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>{user.email}</p>
+                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                  {renderUserAvatar('TUTOR', '90px', '36px')}
+                  <h3 style={{ fontSize: '18px', marginTop: '16px', marginBottom: '4px' }}>{user.name}</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '4px' }}>{user.email}</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>Phone: {user.phone}</p>
                   
                   {user.linkedinUrl && (
-                    <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+                    <div style={{ marginBottom: '20px', textAlign: 'left', width: '100%' }}>
                       <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>LinkedIn Profile</span>
                       <a href={user.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
                         {user.linkedinUrl}
@@ -2100,14 +2176,20 @@ export default function App() {
                     </div>
                   )}
 
-                  <button 
-                    type="button" 
-                    onClick={handleRequestDeactivation} 
-                    className="btn btn-danger" 
-                    style={{ width: '100%', fontSize: '13px', padding: '10px 14px' }}
-                  >
-                    Request Account Deactivation
-                  </button>
+                  {deactivationRequested ? (
+                    <div style={{ color: 'var(--danger)', fontWeight: 'bold', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', fontSize: '13px', width: '100%' }}>
+                      Deactivation requested to Admin
+                    </div>
+                  ) : (
+                    <button 
+                      type="button" 
+                      onClick={handleRequestDeactivation} 
+                      className="btn btn-danger" 
+                      style={{ width: '100%', fontSize: '13px', padding: '10px 14px' }}
+                    >
+                      Request Account Deactivation
+                    </button>
+                  )}
                 </div>
 
                 {/* Tutor Verification submission */}
@@ -2167,23 +2249,23 @@ export default function App() {
                   <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Location Settings</h3>
                   
                   <div className="form-group">
-                    <label className="form-label">City</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Patna" 
-                      value={tutorProfile.city} 
-                      onChange={e => setTutorProfile({ ...tutorProfile, city: e.target.value })} 
-                      className="form-input" 
-                    />
-                  </div>
-
-                  <div className="form-group">
                     <label className="form-label">State</label>
                     <input 
                       type="text" 
                       placeholder="e.g. Bihar" 
                       value={tutorProfile.state} 
                       onChange={e => setTutorProfile({ ...tutorProfile, state: e.target.value })} 
+                      className="form-input" 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">City</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Patna" 
+                      value={tutorProfile.city} 
+                      onChange={e => setTutorProfile({ ...tutorProfile, city: e.target.value })} 
                       className="form-input" 
                     />
                   </div>
@@ -2428,88 +2510,98 @@ export default function App() {
                 <h3 style={{ marginBottom: '20px' }}>Document Approvals Queue ({adminVerifications.length})</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {adminVerifications.map(ver => (
-                    <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'rgba(255,255,255,0.01)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
-                        <div>
-                          <strong style={{ fontSize: '16px', display: 'block' }}>{ver.tutorProfile.user.name}</strong>
-                          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Email: {ver.tutorProfile.user.email} | Qualification: {ver.tutorProfile.qualification}</span>
-                        </div>
-                        <span className="badge badge-secondary" style={{ 
-                          background: ver.status === 'APPROVED' ? 'var(--success-glow)' : ver.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.1)' : 'var(--primary-glow)',
-                          color: ver.status === 'APPROVED' ? 'var(--success)' : ver.status === 'REJECTED' ? 'var(--danger)' : 'var(--primary)',
-                          border: ver.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255,255,255,0.1)'
-                        }}>
-                          {ver.status}
-                        </span>
-                      </div>
+                  {adminVerifications.map(ver => {
+                    const isTutor = ver.tutorProfile != null;
+                    const userName = isTutor ? ver.tutorProfile.user.name : (ver.user ? ver.user.name : 'Unknown');
+                    const userEmail = isTutor ? ver.tutorProfile.user.email : (ver.user ? ver.user.email : '');
+                    const userRole = isTutor ? 'TUTOR' : 'GUARDIAN';
+                    const detailText = isTutor ? `Qualification: ${ver.tutorProfile.qualification}` : 'Guardian account activation request';
 
-                      {/* Display Doc Links */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', padding: '16px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
-                        <div>
-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>ID Proof</span>
-                          <a href={ver.idProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <FileText size={14} /> Open ID Document
-                          </a>
+                    return (
+                      <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'rgba(255,255,255,0.01)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+                          <div>
+                            <strong style={{ fontSize: '16px', display: 'block' }}>{userName} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>({userRole})</span></strong>
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Email: {userEmail} | {detailText}</span>
+                          </div>
+                          <span className="badge badge-secondary" style={{ 
+                            background: ver.status === 'APPROVED' ? 'var(--success-glow)' : ver.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.1)' : 'var(--primary-glow)',
+                            color: ver.status === 'APPROVED' ? 'var(--success)' : ver.status === 'REJECTED' ? 'var(--danger)' : 'var(--primary)',
+                            border: ver.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255,255,255,0.1)'
+                          }}>
+                            {ver.status}
+                          </span>
                         </div>
-                        <div>
-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Degree Proof</span>
-                          <a href={ver.degreeProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <FileText size={14} /> Open Degree Document
-                          </a>
-                        </div>
-                        <div>
-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Background Check</span>
-                          <a href={ver.backgroundCheckUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <FileText size={14} /> Open BG Document
-                          </a>
-                        </div>
-                      </div>
 
-                      {/* Action buttons (only for PENDING status) */}
-                      {ver.status === 'PENDING' && (
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <button onClick={() => handleAdminApproveVerification(ver.id)} className="btn btn-primary" style={{ background: 'var(--success)', boxShadow: 'none', padding: '8px 16px', fontSize: '13px' }}>
-                            <Check size={14} /> Approve Verified Badge
-                          </button>
-                          
-                          {rejectingVerId !== ver.id ? (
-                            <button onClick={() => { setRejectingVerId(ver.id); setRejectionReason(''); }} className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>
-                              Reject Submission
+                        {/* Display Doc Links (Tutors only) */}
+                        {isTutor && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', padding: '16px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px' }}>
+                            <div>
+                              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>ID Proof</span>
+                              <a href={ver.idProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <FileText size={14} /> Open ID Document
+                              </a>
+                            </div>
+                            <div>
+                              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Degree Proof</span>
+                              <a href={ver.degreeProofUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <FileText size={14} /> Open Degree Document
+                              </a>
+                            </div>
+                            <div>
+                              <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Background Check</span>
+                              <a href={ver.backgroundCheckUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <FileText size={14} /> Open BG Document
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action buttons (only for PENDING status) */}
+                        {ver.status === 'PENDING' && (
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => handleAdminApproveVerification(ver.id)} className="btn btn-primary" style={{ background: 'var(--success)', boxShadow: 'none', padding: '8px 16px', fontSize: '13px' }}>
+                              <Check size={14} /> Approve Account
                             </button>
-                          ) : (
-                            <form onSubmit={handleAdminRejectVerification} style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                              <input 
-                                type="text" 
-                                placeholder="Rejection reason..." 
-                                value={rejectionReason} 
-                                onChange={e => setRejectionReason(e.target.value)} 
-                                className="form-input" 
-                                style={{ padding: '8px 12px', fontSize: '13px' }}
-                                required
-                              />
-                              <button type="submit" className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>
-                                Confirm Reject
+                            
+                            {rejectingVerId !== ver.id ? (
+                              <button onClick={() => { setRejectingVerId(ver.id); setRejectionReason(''); }} className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                                Reject Submission
                               </button>
-                              <button type="button" onClick={() => setRejectingVerId(null)} className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
-                                Cancel
-                              </button>
-                            </form>
-                          )}
-                        </div>
-                      )}
+                            ) : (
+                              <form onSubmit={handleAdminRejectVerification} style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                                <input 
+                                  type="text" 
+                                  placeholder="Rejection reason..." 
+                                  value={rejectionReason} 
+                                  onChange={e => setRejectionReason(e.target.value)} 
+                                  className="form-input" 
+                                  style={{ padding: '8px 12px', fontSize: '13px' }}
+                                  required
+                                />
+                                <button type="submit" className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                                  Confirm Reject
+                                </button>
+                                <button type="button" onClick={() => setRejectingVerId(null)} className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                                  Cancel
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        )}
 
-                      {/* Rejection comments display */}
-                      {ver.status === 'REJECTED' && ver.rejectionReason && (
-                        <div style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '8px' }}>
-                          Rejection Reason: <strong>{ver.rejectionReason}</strong>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        {/* Rejection comments display */}
+                        {ver.status === 'REJECTED' && ver.rejectionReason && (
+                          <div style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '8px' }}>
+                            Rejection Reason: <strong>{ver.rejectionReason}</strong>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   
                   {adminVerifications.length === 0 && (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center' }}>No tutor verification requests in queue.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center' }}>No verification requests in queue.</p>
                   )}
                 </div>
               </div>
@@ -2585,11 +2677,7 @@ export default function App() {
                         {adminUsers.map(u => (
                           <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px' }}>
                             <td style={{ padding: '16px 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <img 
-                                src={u.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${u.email}`} 
-                                alt={u.name} 
-                                style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }}
-                              />
+                              {renderUserAvatar(u.role, '36px', '14px')}
                               <div>
                                 <strong style={{ color: 'white', display: 'block' }}>{u.name}</strong>
                                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ID: {u.id}</span>

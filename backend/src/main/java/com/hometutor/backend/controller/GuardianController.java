@@ -61,6 +61,12 @@ public class GuardianController {
         if (request.containsKey("profileImage")) {
             user.setProfileImage(request.get("profileImage"));
         }
+        if (request.containsKey("state")) {
+            user.setState(request.get("state"));
+        }
+        if (request.containsKey("city")) {
+            user.setCity(request.get("city"));
+        }
         if (request.containsKey("password") && request.get("password") != null && !request.get("password").trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.get("password")));
         }
@@ -89,6 +95,8 @@ public class GuardianController {
         details.put("phone", user.getPhone());
         details.put("role", user.getRole().name());
         details.put("profileImage", user.getProfileImage());
+        details.put("state", user.getState());
+        details.put("city", user.getCity());
         details.put("createdAt", user.getCreatedAt());
         return details;
     }

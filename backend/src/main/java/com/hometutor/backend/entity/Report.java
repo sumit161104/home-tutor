@@ -16,7 +16,7 @@ public class Report {
     private User reporter;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "tutor_id", nullable = false)
+    @JoinColumn(name = "tutor_id", nullable = true)
     private TutorProfile tutorProfile;
 
     @Column(nullable = false, columnDefinition = "TEXT")

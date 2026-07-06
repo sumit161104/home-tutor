@@ -58,16 +58,8 @@ public class AuthService {
         user.setGender(request.getGender());
         user.setLinkedinUrl(request.getLinkedinUrl());
         
-        try {
-            UserRole role = UserRole.valueOf(request.getRole().toUpperCase());
-            user.setRole(role);
-            if (role == UserRole.GUARDIAN) {
-                user.setChildGender(request.getChildGender());
-                user.setNumberOfChildren(request.getNumberOfChildren());
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid role! Must be GUARDIAN or TUTOR.");
-        }
+        user.setState(request.getState());
+        user.setCity(request.getCity());
 
         User savedUser = userRepository.save(user);
 
@@ -79,6 +71,13 @@ public class AuthService {
 
             TutorVerification verification = new TutorVerification();
             verification.setTutorProfile(savedProfile);
+            verification.setUser(savedUser);
+            verification.setStatus("PENDING");
+            tutorVerificationRepository.save(verification);
+        } else if (savedUser.getRole() == UserRole.GUARDIAN) {
+            // Guardians also await approval in the Verification Queue
+            TutorVerification verification = new TutorVerification();
+            verification.setUser(savedUser);
             verification.setStatus("PENDING");
             tutorVerificationRepository.save(verification);
         }

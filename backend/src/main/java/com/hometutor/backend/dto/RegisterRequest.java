@@ -9,8 +9,8 @@ public class RegisterRequest {
     private String profileImage;
     private String gender;
     private String linkedinUrl;
-    private String childGender;
-    private Integer numberOfChildren;
+    private String state;
+    private String city;
 
     public RegisterRequest() {}
 
@@ -78,19 +78,19 @@ public class RegisterRequest {
         this.linkedinUrl = linkedinUrl;
     }
 
-    public String getChildGender() {
-        return childGender;
+    public String getState() {
+        return state;
     }
 
-    public void setChildGender(String childGender) {
-        this.childGender = childGender;
+    public void setState(String state) {
+        this.state = state;
     }
 
-    public Integer getNumberOfChildren() {
-        return numberOfChildren;
+    public String getCity() {
+        return city;
     }
 
-    public void setNumberOfChildren(Integer numberOfChildren) {
-        this.numberOfChildren = numberOfChildren;
+    public void setCity(String city) {
+        this.city = city;
     }
 }

@@ -12,8 +12,12 @@ public class TutorVerification {
     private Long id;
 
     @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "tutor_id", nullable = false, unique = true)
+    @JoinColumn(name = "tutor_id", nullable = true, unique = true)
     private TutorProfile tutorProfile;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = true, unique = true)
+    private User user;
 
     @Column(name = "id_proof_url", length = 255)
     private String idProofUrl;
@@ -97,5 +101,13 @@ public class TutorVerification {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

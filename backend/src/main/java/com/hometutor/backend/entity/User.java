@@ -36,11 +36,11 @@ public class User {
     @Column(name = "linkedin_url", length = 255)
     private String linkedinUrl;
 
-    @Column(name = "child_gender", length = 20)
-    private String childGender;
+    @Column(length = 100)
+    private String state;
 
-    @Column(name = "number_of_children")
-    private Integer numberOfChildren = 0;
+    @Column(length = 100)
+    private String city;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -140,19 +140,19 @@ public class User {
         this.linkedinUrl = linkedinUrl;
     }
 
-    public String getChildGender() {
-        return childGender;
+    public String getState() {
+        return state;
     }
 
-    public void setChildGender(String childGender) {
-        this.childGender = childGender;
+    public void setState(String state) {
+        this.state = state;
     }
 
-    public Integer getNumberOfChildren() {
-        return numberOfChildren;
+    public String getCity() {
+        return city;
     }
 
-    public void setNumberOfChildren(Integer numberOfChildren) {
-        this.numberOfChildren = numberOfChildren;
+    public void setCity(String city) {
+        this.city = city;
     }
 }

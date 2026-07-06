@@ -36,20 +36,23 @@ public class ReportController {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
 
-        if (!request.containsKey("tutorId") || !request.containsKey("reason")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "tutorId and reason are required"));
+        if (!request.containsKey("reason")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "reason is required"));
         }
 
         try {
-            Long tutorId = Long.parseLong(request.get("tutorId").toString());
             String reason = request.get("reason").toString();
 
             if (reason.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Reason cannot be empty"));
             }
 
-            TutorProfile tutorProfile = tutorProfileRepository.findById(tutorId)
-                    .orElseThrow(() -> new IllegalArgumentException("Tutor profile not found"));
+            TutorProfile tutorProfile = null;
+            if (request.containsKey("tutorId") && request.get("tutorId") != null && !request.get("tutorId").toString().trim().isEmpty()) {
+                Long tutorId = Long.parseLong(request.get("tutorId").toString());
+                tutorProfile = tutorProfileRepository.findById(tutorId)
+                        .orElseThrow(() -> new IllegalArgumentException("Tutor profile not found"));
+            }
 
             Report report = new Report();
             report.setReporter(user);

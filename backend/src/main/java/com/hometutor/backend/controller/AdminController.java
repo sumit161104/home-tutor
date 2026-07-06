@@ -5,8 +5,11 @@ import com.hometutor.backend.entity.TutorProfile;
 import com.hometutor.backend.entity.TutorVerification;
 import com.hometutor.backend.entity.User;
 import com.hometutor.backend.entity.UserRole;
+import com.hometutor.backend.entity.Review;
+import com.hometutor.backend.entity.Booking;
 import com.hometutor.backend.repository.BookingRepository;
 import com.hometutor.backend.repository.ReportRepository;
+import com.hometutor.backend.repository.ReviewRepository;
 import com.hometutor.backend.repository.TutorProfileRepository;
 import com.hometutor.backend.repository.TutorVerificationRepository;
 import com.hometutor.backend.repository.UserRepository;
@@ -31,6 +34,7 @@ public class AdminController {
     private final BookingRepository bookingRepository;
     private final TutorVerificationRepository tutorVerificationRepository;
     private final ReportRepository reportRepository;
+    private final ReviewRepository reviewRepository;
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
 
@@ -39,6 +43,7 @@ public class AdminController {
                            BookingRepository bookingRepository,
                            TutorVerificationRepository tutorVerificationRepository,
                            ReportRepository reportRepository,
+                           ReviewRepository reviewRepository,
                            AuthService authService,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -46,6 +51,7 @@ public class AdminController {
         this.bookingRepository = bookingRepository;
         this.tutorVerificationRepository = tutorVerificationRepository;
         this.reportRepository = reportRepository;
+        this.reviewRepository = reviewRepository;
         this.authService = authService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -100,14 +106,23 @@ public class AdminController {
         tutorVerificationRepository.save(verification);
 
         TutorProfile profile = verification.getTutorProfile();
-        profile.setIsVerified(true);
-        tutorProfileRepository.save(profile);
+        if (profile != null) {
+            profile.setIsVerified(true);
+            tutorProfileRepository.save(profile);
 
-        // Also approve the associated User account so they can log in (Item 12)
-        User tutorUser = profile.getUser();
-        if (tutorUser != null) {
-            tutorUser.setApproved(true);
-            userRepository.save(tutorUser);
+            // Also approve the associated User account so they can log in
+            User tutorUser = profile.getUser();
+            if (tutorUser != null) {
+                tutorUser.setApproved(true);
+                userRepository.save(tutorUser);
+            }
+        } else {
+            // Approve Guardian User directly
+            User guardianUser = verification.getUser();
+            if (guardianUser != null) {
+                guardianUser.setApproved(true);
+                userRepository.save(guardianUser);
+            }
         }
 
         return ResponseEntity.ok(verification);
@@ -131,8 +146,17 @@ public class AdminController {
         tutorVerificationRepository.save(verification);
 
         TutorProfile profile = verification.getTutorProfile();
-        profile.setIsVerified(false);
-        tutorProfileRepository.save(profile);
+        if (profile != null) {
+            profile.setIsVerified(false);
+            tutorProfileRepository.save(profile);
+        } else {
+            // Keep/set Guardian user account to unapproved
+            User guardianUser = verification.getUser();
+            if (guardianUser != null) {
+                guardianUser.setApproved(false);
+                userRepository.save(guardianUser);
+            }
+        }
 
         return ResponseEntity.ok(verification);
     }
@@ -275,6 +299,48 @@ public class AdminController {
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
+
+        // Clean up all related records manually to prevent foreign key constraint violations
+        if (user.getRole() == UserRole.TUTOR) {
+            TutorProfile tutorProfile = tutorProfileRepository.findByUserId(id).orElse(null);
+            if (tutorProfile != null) {
+                // Delete verification
+                tutorVerificationRepository.findByTutorProfileId(tutorProfile.getId())
+                    .ifPresent(tutorVerificationRepository::delete);
+                
+                // Delete reviews
+                List<Review> reviews = reviewRepository.findByTutorProfileId(tutorProfile.getId());
+                reviewRepository.deleteAll(reviews);
+                
+                // Delete bookings
+                List<Booking> bookings = bookingRepository.findByTutorProfileId(tutorProfile.getId());
+                bookingRepository.deleteAll(bookings);
+                
+                // Delete reports
+                List<Report> reports = reportRepository.findByTutorProfileId(tutorProfile.getId());
+                reportRepository.deleteAll(reports);
+                
+                // Delete tutor profile (which cascades to availabilities via JPA)
+                tutorProfileRepository.delete(tutorProfile);
+            }
+        } else if (user.getRole() == UserRole.GUARDIAN) {
+            // Delete reviews submitted by this guardian
+            List<Review> reviews = reviewRepository.findByGuardianId(id);
+            reviewRepository.deleteAll(reviews);
+            
+            // Delete bookings requested by this guardian
+            List<Booking> bookings = bookingRepository.findByGuardianId(id);
+            bookingRepository.deleteAll(bookings);
+            
+            // Delete reports filed by this guardian
+            List<Report> reports = reportRepository.findByReporterId(id);
+            reportRepository.deleteAll(reports);
+        }
+
+        // Also delete any direct User verification requests (e.g. for Guardians)
+        tutorVerificationRepository.findAll().stream()
+            .filter(v -> v.getUser() != null && v.getUser().getId().equals(id))
+            .forEach(tutorVerificationRepository::delete);
 
         userRepository.delete(user);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
