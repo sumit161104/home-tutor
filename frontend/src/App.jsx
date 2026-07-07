@@ -552,7 +552,6 @@ export default function App() {
         const res = await fetchWithAuth('/api/reports', {
           method: 'POST',
           body: JSON.stringify({
-            tutorId: tutorProfile.id || user.id, // Fallback if tutorProfile.id isn't populated
             reason: `DEACTIVATION_REQUEST: Tutor ${user.name} (${user.email}) is requesting account deactivation.`
           })
         })

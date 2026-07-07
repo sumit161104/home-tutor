@@ -323,19 +323,17 @@ public class AdminController {
                 // Delete tutor profile (which cascades to availabilities via JPA)
                 tutorProfileRepository.delete(tutorProfile);
             }
-        } else if (user.getRole() == UserRole.GUARDIAN) {
-            // Delete reviews submitted by this guardian
-            List<Review> reviews = reviewRepository.findByGuardianId(id);
-            reviewRepository.deleteAll(reviews);
-            
-            // Delete bookings requested by this guardian
-            List<Booking> bookings = bookingRepository.findByGuardianId(id);
-            bookingRepository.deleteAll(bookings);
-            
-            // Delete reports filed by this guardian
-            List<Report> reports = reportRepository.findByReporterId(id);
-            reportRepository.deleteAll(reports);
         }
+        
+        // Universal cleanup for records created BY this user (applies to Guardians, and Tutors filing deactivation reports)
+        List<Review> reviews = reviewRepository.findByGuardianId(id);
+        if (!reviews.isEmpty()) reviewRepository.deleteAll(reviews);
+        
+        List<Booking> bookings = bookingRepository.findByGuardianId(id);
+        if (!bookings.isEmpty()) bookingRepository.deleteAll(bookings);
+        
+        List<Report> reports = reportRepository.findByReporterId(id);
+        if (!reports.isEmpty()) reportRepository.deleteAll(reports);
 
         // Also delete any direct User verification requests (e.g. for Guardians)
         tutorVerificationRepository.findAll().stream()
