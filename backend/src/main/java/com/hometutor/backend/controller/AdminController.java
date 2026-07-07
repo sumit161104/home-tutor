@@ -1,59 +1,26 @@
 package com.hometutor.backend.controller;
 
-import com.hometutor.backend.entity.Report;
-import com.hometutor.backend.entity.TutorProfile;
-import com.hometutor.backend.entity.TutorVerification;
 import com.hometutor.backend.entity.User;
 import com.hometutor.backend.entity.UserRole;
-import com.hometutor.backend.entity.Review;
-import com.hometutor.backend.entity.Booking;
-import com.hometutor.backend.repository.BookingRepository;
-import com.hometutor.backend.repository.ReportRepository;
-import com.hometutor.backend.repository.ReviewRepository;
-import com.hometutor.backend.repository.TutorProfileRepository;
-import com.hometutor.backend.repository.TutorVerificationRepository;
-import com.hometutor.backend.repository.UserRepository;
+import com.hometutor.backend.service.AdminService;
 import com.hometutor.backend.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    private final UserRepository userRepository;
-    private final TutorProfileRepository tutorProfileRepository;
-    private final BookingRepository bookingRepository;
-    private final TutorVerificationRepository tutorVerificationRepository;
-    private final ReportRepository reportRepository;
-    private final ReviewRepository reviewRepository;
+    private final AdminService adminService;
     private final AuthService authService;
-    private final PasswordEncoder passwordEncoder;
 
-    public AdminController(UserRepository userRepository,
-                           TutorProfileRepository tutorProfileRepository,
-                           BookingRepository bookingRepository,
-                           TutorVerificationRepository tutorVerificationRepository,
-                           ReportRepository reportRepository,
-                           ReviewRepository reviewRepository,
-                           AuthService authService,
-                           PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.tutorProfileRepository = tutorProfileRepository;
-        this.bookingRepository = bookingRepository;
-        this.tutorVerificationRepository = tutorVerificationRepository;
-        this.reportRepository = reportRepository;
-        this.reviewRepository = reviewRepository;
+    public AdminController(AdminService adminService, AuthService authService) {
+        this.adminService = adminService;
         this.authService = authService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping("/stats")
@@ -61,20 +28,7 @@ public class AdminController {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied: Admins Only"));
         }
-
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalUsers", userRepository.count());
-        
-        // Count tutors
-        long tutorCount = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == UserRole.TUTOR)
-                .count();
-        stats.put("totalTutors", tutorCount);
-        stats.put("totalBookings", bookingRepository.count());
-        stats.put("pendingVerifications", tutorVerificationRepository.findByStatus("PENDING").size());
-        stats.put("activeReports", reportRepository.findByStatus("PENDING").size());
-
-        return ResponseEntity.ok(stats);
+        return ResponseEntity.ok(adminService.getSystemStats());
     }
 
     @GetMapping("/verifications")
@@ -82,83 +36,32 @@ public class AdminController {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-
-        if (status != null && !status.isEmpty()) {
-            return ResponseEntity.ok(tutorVerificationRepository.findByStatus(status.toUpperCase()));
-        }
-        return ResponseEntity.ok(tutorVerificationRepository.findAll());
+        return ResponseEntity.ok(adminService.getVerifications(status));
     }
 
     @PutMapping("/verifications/{id}/approve")
-    @Transactional
     public ResponseEntity<?> approveVerification(@PathVariable Long id) {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-
-        TutorVerification verification = tutorVerificationRepository.findById(id).orElse(null);
-        if (verification == null) {
+        try {
+            return ResponseEntity.ok(adminService.approveVerification(id));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
-
-        verification.setStatus("APPROVED");
-        verification.setRejectionReason(null);
-        tutorVerificationRepository.save(verification);
-
-        TutorProfile profile = verification.getTutorProfile();
-        if (profile != null) {
-            profile.setIsVerified(true);
-            tutorProfileRepository.save(profile);
-
-            // Also approve the associated User account so they can log in
-            User tutorUser = profile.getUser();
-            if (tutorUser != null) {
-                tutorUser.setApproved(true);
-                userRepository.save(tutorUser);
-            }
-        } else {
-            // Approve Guardian User directly
-            User guardianUser = verification.getUser();
-            if (guardianUser != null) {
-                guardianUser.setApproved(true);
-                userRepository.save(guardianUser);
-            }
-        }
-
-        return ResponseEntity.ok(verification);
     }
 
     @PutMapping("/verifications/{id}/reject")
-    @Transactional
     public ResponseEntity<?> rejectVerification(@PathVariable Long id, @RequestBody Map<String, String> request) {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-
-        TutorVerification verification = tutorVerificationRepository.findById(id).orElse(null);
-        if (verification == null) {
+        String reason = request.containsKey("reason") ? request.get("reason") : "Documents did not match requirements";
+        try {
+            return ResponseEntity.ok(adminService.rejectVerification(id, reason));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
-
-        String reason = request.containsKey("reason") ? request.get("reason") : "Documents did not match requirements";
-        verification.setStatus("REJECTED");
-        verification.setRejectionReason(reason);
-        tutorVerificationRepository.save(verification);
-
-        TutorProfile profile = verification.getTutorProfile();
-        if (profile != null) {
-            profile.setIsVerified(false);
-            tutorProfileRepository.save(profile);
-        } else {
-            // Keep/set Guardian user account to unapproved
-            User guardianUser = verification.getUser();
-            if (guardianUser != null) {
-                guardianUser.setApproved(false);
-                userRepository.save(guardianUser);
-            }
-        }
-
-        return ResponseEntity.ok(verification);
     }
 
     @GetMapping("/reports")
@@ -166,7 +69,7 @@ public class AdminController {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-        return ResponseEntity.ok(reportRepository.findAll());
+        return ResponseEntity.ok(adminService.getAllReports());
     }
 
     @PutMapping("/reports/{id}/resolve")
@@ -174,15 +77,11 @@ public class AdminController {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-
-        Report report = reportRepository.findById(id).orElse(null);
-        if (report == null) {
+        try {
+            return ResponseEntity.ok(adminService.resolveReport(id));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
-
-        report.setStatus("RESOLVED");
-        Report saved = reportRepository.save(report);
-        return ResponseEntity.ok(saved);
     }
 
     @GetMapping("/users")
@@ -190,158 +89,54 @@ public class AdminController {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-        return ResponseEntity.ok(userRepository.findAll());
+        return ResponseEntity.ok(adminService.getAllUsers());
     }
 
     @PostMapping("/users")
-    @Transactional
     public ResponseEntity<?> createUser(@RequestBody Map<String, String> request) {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-
-        String email = request.get("email");
-        if (userRepository.existsByEmail(email)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email is already in use!"));
-        }
-
-        User user = new User();
-        user.setName(request.get("name"));
-        user.setEmail(email);
-        user.setPhone(request.get("phone"));
-        user.setPassword(passwordEncoder.encode(request.get("password")));
-        user.setProfileImage(request.get("profileImage"));
-        
         try {
-            user.setRole(UserRole.valueOf(request.get("role").toUpperCase()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid role!"));
+            return ResponseEntity.ok(adminService.createUser(request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-
-        user.setApproved(true);
-
-        User savedUser = userRepository.save(user);
-
-        if (savedUser.getRole() == UserRole.TUTOR) {
-            TutorProfile profile = new TutorProfile();
-            profile.setUser(savedUser);
-            tutorProfileRepository.save(profile);
-        }
-
-        return ResponseEntity.ok(savedUser);
     }
 
     @PutMapping("/users/{id}")
-    @Transactional
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> request) {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-
-        User user = userRepository.findById(id).orElse(null);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        if (request.containsKey("name")) user.setName(request.get("name").toString());
-        if (request.containsKey("email")) {
-            String newEmail = request.get("email").toString();
-            if (!newEmail.equals(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Email is already in use!"));
+        try {
+            return ResponseEntity.ok(adminService.updateUser(id, request));
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().equals("User not found")) {
+                return ResponseEntity.notFound().build();
             }
-            user.setEmail(newEmail);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        if (request.containsKey("phone")) user.setPhone(request.get("phone").toString());
-        if (request.containsKey("profileImage")) {
-            user.setProfileImage(request.get("profileImage") != null ? request.get("profileImage").toString() : null);
-        }
-        if (request.containsKey("password") && request.get("password") != null && !request.get("password").toString().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(request.get("password").toString()));
-        }
-        if (request.containsKey("role")) {
-            UserRole oldRole = user.getRole();
-            try {
-                UserRole newRole = UserRole.valueOf(request.get("role").toString().toUpperCase());
-                user.setRole(newRole);
-                
-                if (newRole == UserRole.TUTOR && oldRole != UserRole.TUTOR) {
-                    if (!tutorProfileRepository.findByUserId(id).isPresent()) {
-                        TutorProfile profile = new TutorProfile();
-                        profile.setUser(user);
-                        tutorProfileRepository.save(profile);
-                    }
-                }
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid role!"));
-            }
-        }
-        if (request.containsKey("approved")) {
-            user.setApproved((Boolean) request.get("approved"));
-        }
-
-        User updatedUser = userRepository.save(user);
-        return ResponseEntity.ok(updatedUser);
     }
 
     @DeleteMapping("/users/{id}")
-    @Transactional
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
 
         User currentAdmin = getCurrentAuthenticatedUser();
-        if (currentAdmin != null && currentAdmin.getId().equals(id)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "You cannot delete your own admin account!"));
-        }
+        Long currentAdminId = currentAdmin != null ? currentAdmin.getId() : null;
 
-        User user = userRepository.findById(id).orElse(null);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // Clean up all related records manually to prevent foreign key constraint violations
-        if (user.getRole() == UserRole.TUTOR) {
-            TutorProfile tutorProfile = tutorProfileRepository.findByUserId(id).orElse(null);
-            if (tutorProfile != null) {
-                // Delete verification
-                tutorVerificationRepository.findByTutorProfileId(tutorProfile.getId())
-                    .ifPresent(tutorVerificationRepository::delete);
-                
-                // Delete reviews
-                List<Review> reviews = reviewRepository.findByTutorProfileId(tutorProfile.getId());
-                reviewRepository.deleteAll(reviews);
-                
-                // Delete bookings
-                List<Booking> bookings = bookingRepository.findByTutorProfileId(tutorProfile.getId());
-                bookingRepository.deleteAll(bookings);
-                
-                // Delete reports
-                List<Report> reports = reportRepository.findByTutorProfileId(tutorProfile.getId());
-                reportRepository.deleteAll(reports);
-                
-                // Delete tutor profile (which cascades to availabilities via JPA)
-                tutorProfileRepository.delete(tutorProfile);
+        try {
+            adminService.deleteUser(id, currentAdminId);
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().equals("User not found")) {
+                return ResponseEntity.notFound().build();
             }
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        
-        // Universal cleanup for records created BY this user (applies to Guardians, and Tutors filing deactivation reports)
-        List<Review> reviews = reviewRepository.findByGuardianId(id);
-        if (!reviews.isEmpty()) reviewRepository.deleteAll(reviews);
-        
-        List<Booking> bookings = bookingRepository.findByGuardianId(id);
-        if (!bookings.isEmpty()) bookingRepository.deleteAll(bookings);
-        
-        List<Report> reports = reportRepository.findByReporterId(id);
-        if (!reports.isEmpty()) reportRepository.deleteAll(reports);
-
-        // Also delete any direct User verification requests (e.g. for Guardians)
-        tutorVerificationRepository.findAll().stream()
-            .filter(v -> v.getUser() != null && v.getUser().getId().equals(id))
-            .forEach(tutorVerificationRepository::delete);
-
-        userRepository.delete(user);
-        return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 
     @PutMapping("/users/{id}/approve")
@@ -349,19 +144,14 @@ public class AdminController {
         if (!isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Access Denied"));
         }
-
-        User user = userRepository.findById(id).orElse(null);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-
         if (!request.containsKey("approved")) {
             return ResponseEntity.badRequest().body(Map.of("error", "approved key is required"));
         }
-
-        user.setApproved(request.get("approved"));
-        User saved = userRepository.save(user);
-        return ResponseEntity.ok(saved);
+        try {
+            return ResponseEntity.ok(adminService.toggleApproval(id, request.get("approved")));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     private User getCurrentAuthenticatedUser() {
@@ -377,15 +167,7 @@ public class AdminController {
     }
 
     private boolean isAdmin() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails userDetails) {
-            try {
-                User user = authService.getUserByEmail(userDetails.getUsername());
-                return user.getRole() == UserRole.ADMIN;
-            } catch (Exception e) {
-                return false;
-            }
-        }
-        return false;
+        User user = getCurrentAuthenticatedUser();
+        return user != null && user.getRole() == UserRole.ADMIN;
     }
 }
