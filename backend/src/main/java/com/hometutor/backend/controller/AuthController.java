@@ -74,6 +74,8 @@ public class AuthController {
                 response.put("phone", user.getPhone());
                 response.put("role", user.getRole().name());
                 response.put("profileImage", user.getProfileImage());
+                response.put("state", user.getState());
+                response.put("city", user.getCity());
                 return ResponseEntity.ok(response);
             } catch (Exception e) {
                 return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));

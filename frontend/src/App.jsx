@@ -175,6 +175,8 @@ export default function App() {
   })
   const [adminTab, setAdminTab] = useState('stats') // 'stats' | 'verifications' | 'reports' | 'users'
   const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [tutorVerSearch, setTutorVerSearch] = useState('')
+  const [guardianVerSearch, setGuardianVerSearch] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [rejectingVerId, setRejectingVerId] = useState(null)
   const availableStates = Array.from(new Set(allTutors.map(t => t.state).filter(Boolean))).sort()
@@ -2439,10 +2441,31 @@ export default function App() {
             {/* TAB CONTENT: Tutor Verifications Queue */}
             {adminTab === 'verifications' && (
               <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
-                <h3 style={{ marginBottom: '20px' }}>Tutor Approvals Queue ({adminVerifications.filter(v => v.tutorProfile != null).length})</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+                  <h3 style={{ margin: 0 }}>Tutor Approvals Queue ({adminVerifications.filter(v => v.tutorProfile != null).length})</h3>
+                  <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '300px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search tutor by name or email..." 
+                      className="form-input" 
+                      style={{ paddingLeft: '36px', height: '40px' }}
+                      value={tutorVerSearch}
+                      onChange={e => setTutorVerSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {adminVerifications.filter(v => v.tutorProfile != null).map(ver => {
+                  {adminVerifications.filter(v => v.tutorProfile != null)
+                    .filter(v => {
+                      if (!tutorVerSearch) return true;
+                      const search = tutorVerSearch.toLowerCase();
+                      const name = (v.tutorProfile.user.name || '').toLowerCase();
+                      const email = (v.tutorProfile.user.email || '').toLowerCase();
+                      return name.includes(search) || email.includes(search);
+                    })
+                    .map(ver => {
                     const isTutor = true;
                     const userName = ver.tutorProfile.user.name;
                     const userEmail = ver.tutorProfile.user.email;
@@ -2540,10 +2563,31 @@ export default function App() {
             {/* TAB CONTENT: Guardian Verifications Queue */}
             {adminTab === 'guardian-verifications' && (
               <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
-                <h3 style={{ marginBottom: '20px' }}>Guardian Approvals Queue ({adminVerifications.filter(v => v.tutorProfile == null).length})</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+                  <h3 style={{ margin: 0 }}>Guardian Approvals Queue ({adminVerifications.filter(v => v.tutorProfile == null).length})</h3>
+                  <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '300px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search guardian by name or email..." 
+                      className="form-input" 
+                      style={{ paddingLeft: '36px', height: '40px' }}
+                      value={guardianVerSearch}
+                      onChange={e => setGuardianVerSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {adminVerifications.filter(v => v.tutorProfile == null).map(ver => {
+                  {adminVerifications.filter(v => v.tutorProfile == null)
+                    .filter(v => {
+                      if (!guardianVerSearch) return true;
+                      const search = guardianVerSearch.toLowerCase();
+                      const name = (v.user?.name || '').toLowerCase();
+                      const email = (v.user?.email || '').toLowerCase();
+                      return name.includes(search) || email.includes(search);
+                    })
+                    .map(ver => {
                     const userName = ver.user ? ver.user.name : 'Unknown';
                     const userEmail = ver.user ? ver.user.email : '';
                     const userRole = 'GUARDIAN';

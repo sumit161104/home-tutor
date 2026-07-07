@@ -8,8 +8,10 @@ public class AuthResponse {
     private String phone;
     private String role;
     private String profileImage;
+    private String state;
+    private String city;
 
-    public AuthResponse(String token, Long id, String name, String email, String phone, String role, String profileImage) {
+    public AuthResponse(String token, Long id, String name, String email, String phone, String role, String profileImage, String state, String city) {
         this.token = token;
         this.id = id;
         this.name = name;
@@ -17,6 +19,8 @@ public class AuthResponse {
         this.phone = phone;
         this.role = role;
         this.profileImage = profileImage;
+        this.state = state;
+        this.city = city;
     }
 
     public String getToken() {
@@ -73,5 +77,21 @@ public class AuthResponse {
 
     public void setProfileImage(String profileImage) {
         this.profileImage = profileImage;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 }

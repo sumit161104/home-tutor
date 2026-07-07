@@ -86,11 +86,11 @@ public class AuthService {
         if (savedUser.getRole() == UserRole.TUTOR || savedUser.getRole() == UserRole.GUARDIAN) {
             savedUser.setApproved(false);
             userRepository.save(savedUser);
-            return new AuthResponse(null, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage());
+            return new AuthResponse(null, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity());
         }
 
         String token = tokenProvider.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
-        return new AuthResponse(token, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage());
+        return new AuthResponse(token, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -106,7 +106,7 @@ public class AuthService {
         }
 
         String token = tokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole().name());
-        return new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getPhone(), user.getRole().name(), user.getProfileImage());
+        return new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getPhone(), user.getRole().name(), user.getProfileImage(), user.getState(), user.getCity());
     }
 
     public User getUserByEmail(String email) {
