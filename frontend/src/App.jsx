@@ -2814,7 +2814,11 @@ export default function App() {
                           <span style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 'bold' }}>DISPUTE #{rep.id}</span>
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Status: {rep.status}</span>
                         </div>
-                        <p style={{ fontSize: '14px', margin: '4px 0' }}>Reported Tutor: <strong>{rep.tutorProfile.user.name}</strong></p>
+                        {rep.tutorProfile ? (
+                          <p style={{ fontSize: '14px', margin: '4px 0' }}>Reported Tutor: <strong>{rep.tutorProfile.user.name}</strong></p>
+                        ) : (
+                          <p style={{ fontSize: '14px', margin: '4px 0', color: 'var(--warning)', fontWeight: 600 }}>Deactivation Request</p>
+                        )}
                         <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Reason: "{rep.reason}"</p>
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Reporter: {rep.reporter.name} ({rep.reporter.email})</span>
                       </div>
