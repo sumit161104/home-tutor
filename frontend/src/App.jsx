@@ -28,6 +28,7 @@ const customStyles = {
     zIndex: 9999,
     border: '1px solid var(--border-color)'
   }),
+  menuPortal: base => ({ ...base, zIndex: 9999 }),
   option: (provided, state) => ({
     ...provided,
     backgroundColor: state.isFocused ? 'var(--primary)' : 'var(--bg-tertiary)',
@@ -1285,7 +1286,7 @@ export default function App() {
                       }}
                       classNamePrefix="react-select"
                       isClearable
-                      styles={customStyles}
+                      styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
                     />
                   </div>
                 </div>
@@ -1302,7 +1303,7 @@ export default function App() {
                       formatCreateLabel={(val) => `Search for "${val}"`}
                       classNamePrefix="react-select"
                       isClearable
-                      styles={customStyles}
+                      styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
                     />
                   </div>
                 </div>
@@ -1939,7 +1940,7 @@ export default function App() {
                       }}
                       classNamePrefix="react-select"
                       isClearable
-                      styles={customStyles}
+                      styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
                     />
                   </div>
 
@@ -1955,7 +1956,7 @@ export default function App() {
                       formatCreateLabel={(val) => `Add "${val}"`}
                       classNamePrefix="react-select"
                       isClearable
-                      styles={customStyles}
+                      styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
                     />
                   </div>
 
@@ -2319,7 +2320,7 @@ export default function App() {
                       }}
                       classNamePrefix="react-select"
                       isClearable
-                      styles={customStyles}
+                      styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
                     />
                   </div>
 
@@ -2335,7 +2336,7 @@ export default function App() {
                       formatCreateLabel={(val) => `Add "${val}"`}
                       classNamePrefix="react-select"
                       isClearable
-                      styles={customStyles}
+                      styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
                     />
                   </div>
 

@@ -22,6 +22,7 @@ const customStyles = {
     backgroundColor: 'var(--bg-secondary)',
     zIndex: 9999
   }),
+  menuPortal: base => ({ ...base, zIndex: 9999 }),
   option: (provided, state) => ({
     ...provided,
     backgroundColor: state.isFocused ? 'var(--primary)' : 'var(--bg-secondary)',
@@ -186,7 +187,7 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
                 setSelectedCity(null); // Reset city when state changes
               }}
               classNamePrefix="react-select"
-              styles={customStyles}
+              styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
             />
           </div>
 
@@ -199,7 +200,7 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
               options={cityOptions}
               formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
               classNamePrefix="react-select"
-              styles={customStyles}
+              styles={customStyles} menuPortalTarget={document.body} menuPosition="fixed"
             />
           </div>
 
