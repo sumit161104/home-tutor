@@ -86,11 +86,11 @@ public class AuthService {
         if (savedUser.getRole() == UserRole.TUTOR || savedUser.getRole() == UserRole.GUARDIAN) {
             savedUser.setApproved(false);
             userRepository.save(savedUser);
-            return new AuthResponse(null, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity());
+            return new AuthResponse(null, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity(), savedUser.isEmailVerified(), savedUser.isPhoneVerified());
         }
 
         String token = tokenProvider.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
-        return new AuthResponse(token, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity());
+        return new AuthResponse(token, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity(), savedUser.isEmailVerified(), savedUser.isPhoneVerified());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -106,11 +106,15 @@ public class AuthService {
         }
 
         String token = tokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole().name());
-        return new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getPhone(), user.getRole().name(), user.getProfileImage(), user.getState(), user.getCity());
+        return new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getPhone(), user.getRole().name(), user.getProfileImage(), user.getState(), user.getCity(), user.isEmailVerified(), user.isPhoneVerified());
     }
 
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found!"));
+    }
+
+    public java.util.Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 }

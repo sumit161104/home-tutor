@@ -10,8 +10,10 @@ public class AuthResponse {
     private String profileImage;
     private String state;
     private String city;
+    private boolean isEmailVerified;
+    private boolean isPhoneVerified;
 
-    public AuthResponse(String token, Long id, String name, String email, String phone, String role, String profileImage, String state, String city) {
+    public AuthResponse(String token, Long id, String name, String email, String phone, String role, String profileImage, String state, String city, boolean isEmailVerified, boolean isPhoneVerified) {
         this.token = token;
         this.id = id;
         this.name = name;
@@ -21,6 +23,8 @@ public class AuthResponse {
         this.profileImage = profileImage;
         this.state = state;
         this.city = city;
+        this.isEmailVerified = isEmailVerified;
+        this.isPhoneVerified = isPhoneVerified;
     }
 
     public String getToken() {
@@ -93,5 +97,21 @@ public class AuthResponse {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public boolean isEmailVerified() {
+        return isEmailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        isEmailVerified = emailVerified;
+    }
+
+    public boolean isPhoneVerified() {
+        return isPhoneVerified;
+    }
+
+    public void setPhoneVerified(boolean phoneVerified) {
+        isPhoneVerified = phoneVerified;
     }
 }

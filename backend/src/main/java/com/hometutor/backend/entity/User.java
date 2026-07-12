@@ -48,6 +48,21 @@ public class User {
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved = false;
 
+    @Column(name = "is_email_verified", nullable = false)
+    private boolean isEmailVerified = false;
+
+    @Column(name = "is_phone_verified", nullable = false)
+    private boolean isPhoneVerified = false;
+
+    @Column(name = "email_otp", length = 6)
+    private String emailOtp;
+
+    @Column(name = "phone_otp", length = 6)
+    private String phoneOtp;
+
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
     // Default Constructor
     public User() {}
 
@@ -154,5 +169,45 @@ public class User {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public boolean isEmailVerified() {
+        return isEmailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        isEmailVerified = emailVerified;
+    }
+
+    public boolean isPhoneVerified() {
+        return isPhoneVerified;
+    }
+
+    public void setPhoneVerified(boolean phoneVerified) {
+        isPhoneVerified = phoneVerified;
+    }
+
+    public String getEmailOtp() {
+        return emailOtp;
+    }
+
+    public void setEmailOtp(String emailOtp) {
+        this.emailOtp = emailOtp;
+    }
+
+    public String getPhoneOtp() {
+        return phoneOtp;
+    }
+
+    public void setPhoneOtp(String phoneOtp) {
+        this.phoneOtp = phoneOtp;
+    }
+
+    public LocalDateTime getOtpExpiry() {
+        return otpExpiry;
+    }
+
+    public void setOtpExpiry(LocalDateTime otpExpiry) {
+        this.otpExpiry = otpExpiry;
     }
 }

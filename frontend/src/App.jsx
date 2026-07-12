@@ -7,7 +7,13 @@ import {
   LogOut, Shield, ChevronRight, X, Compass, CheckCircle2, 
   Plus, Trash2, Edit3, MessageCircle, Star, AlertTriangle, 
   Check, FileText, BarChart2, CheckSquare 
-} from 'lucide-react'
+} from 'lucide-react';
+import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
+
+const indianStates = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+].map(state => ({ value: state, label: state }));
 
 export default function App() {
   // Navigation / Route state: 'search' | 'detail' | 'login' | 'register' | 'tutor-dashboard' | 'guardian-dashboard' | 'admin-dashboard'
@@ -173,7 +179,13 @@ export default function App() {
     profileImage: '',
     approved: true
   })
-  const [adminTab, setAdminTab] = useState('stats') // 'stats' | 'verifications' | 'reports' | 'users'
+  const [adminTab, setAdminTab] = useState('stats')
+
+  // Verification Modal State
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [verificationType, setVerificationType] = useState('email') // 'email' or 'phone'
+  const [otpCode, setOtpCode] = useState('')
+  const [verificationStep, setVerificationStep] = useState(1) // 1: Select/Send, 2: Enter OTP // 'stats' | 'verifications' | 'reports' | 'users'
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [tutorVerSearch, setTutorVerSearch] = useState('')
   const [guardianVerSearch, setGuardianVerSearch] = useState('')
@@ -884,6 +896,53 @@ export default function App() {
     }
   }
 
+  // Contact Verification Handlers
+  const handleSendOtp = async (type) => {
+    setLoading(true);
+    clearMessages();
+    try {
+      const res = await fetchWithAuth(`/api/verification/send-${type}-otp`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMsg(data.message || `OTP sent to your ${type}.`);
+        setVerificationStep(2);
+      } else {
+        setErrorMsg(data.error || 'Failed to send OTP.');
+      }
+    } catch (err) {
+      setErrorMsg('Network error. Failed to send OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    clearMessages();
+    try {
+      const res = await fetchWithAuth(`/api/verification/verify-${verificationType}-otp?otp=${otpCode}`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMsg(data.message || 'Verification successful!');
+        if (verificationType === 'email') {
+          setUser({ ...user, isEmailVerified: true });
+        } else {
+          setUser({ ...user, isPhoneVerified: true });
+        }
+        setShowVerificationModal(false);
+        setVerificationStep(1);
+        setOtpCode('');
+      } else {
+        setErrorMsg(data.error || 'Invalid OTP.');
+      }
+    } catch (err) {
+      setErrorMsg('Network error. Failed to verify OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAdminCreateUser = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -1176,40 +1235,33 @@ export default function App() {
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">State/UT</label>
                   <div style={{ position: 'relative' }}>
-                    <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', zIndex: 10, color: 'var(--text-muted)' }} />
-                    <select 
-                      value={stateFilter} 
-                      onChange={e => {
-                        setStateFilter(e.target.value);
-                        setCity(''); // Reset City selection when State changes
-                      }} 
-                      className="form-select" 
-                      style={{ paddingLeft: '38px' }}
-                    >
-                      <option value="">All States/UTs</option>
-                      {availableStates.map(st => (
-                        <option key={st} value={st}>{st}</option>
-                      ))}
-                    </select>
+                    <Select 
+                      options={availableStates.map(st => ({ value: st, label: st }))}
+                      placeholder="Select State"
+                      value={stateFilter ? { value: stateFilter, label: stateFilter } : null}
+                      onChange={selected => {
+                        setStateFilter(selected ? selected.value : '');
+                        setCity('');
+                      }}
+                      classNamePrefix="react-select"
+                      isClearable
+                    />
                   </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">City</label>
                   <div style={{ position: 'relative' }}>
-                    <MapPin size={18} style={{ position: 'absolute', left: '12px', top: '15px', zIndex: 10, color: 'var(--text-muted)' }} />
-                    <select 
-                      value={city} 
-                      onChange={e => setCity(e.target.value)} 
-                      className="form-select" 
-                      style={{ paddingLeft: '38px' }}
-                      disabled={!stateFilter}
-                    >
-                      <option value="">All Cities</option>
-                      {availableCities.map(ct => (
-                        <option key={ct} value={ct}>{ct}</option>
-                      ))}
-                    </select>
+                    <CreatableSelect 
+                      options={availableCities.map(ct => ({ value: ct, label: ct }))}
+                      placeholder="Select City"
+                      value={city ? { value: city, label: city } : null}
+                      onChange={selected => setCity(selected ? selected.value : '')}
+                      isDisabled={!stateFilter}
+                      formatCreateLabel={(val) => `Search for "${val}"`}
+                      classNamePrefix="react-select"
+                      isClearable
+                    />
                   </div>
                 </div>
 
@@ -1729,6 +1781,23 @@ export default function App() {
           <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
             <h1 style={{ marginBottom: '24px' }}>Guardian Profile Settings</h1>
 
+            {!user.isEmailVerified && (
+              <div className="glass-panel" style={{ background: 'rgba(234, 179, 8, 0.1)', borderColor: 'var(--warning)', padding: '16px', marginBottom: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertTriangle size={24} color="var(--warning)" />
+                <div style={{ flex: 1 }}>
+                  <strong style={{ color: 'white', display: 'block' }}>Email Verification Required</strong>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    Your email address is unverified.
+                  </span>
+                </div>
+                <div>
+                  <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '12px' }} onClick={() => setShowVerificationModal(true)}>
+                    Verify Now
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="responsive-grid-1-2" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px' }}>
               {/* Left Details sidebar */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1818,23 +1887,26 @@ export default function App() {
 
                   <div className="form-group">
                     <label className="form-label">State/UT</label>
-                    <input 
-                      type="text" 
-                      value={guardianProfile.state} 
-                      onChange={e => setGuardianProfile({ ...guardianProfile, state: e.target.value })} 
-                      className="form-input" 
-                      placeholder="e.g. Bihar"
+                    <Select 
+                      options={indianStates}
+                      placeholder="Select State"
+                      value={guardianProfile.state ? { value: guardianProfile.state, label: guardianProfile.state } : null}
+                      onChange={selected => setGuardianProfile({ ...guardianProfile, state: selected ? selected.value : '' })}
+                      classNamePrefix="react-select"
+                      isClearable
                     />
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">City</label>
-                    <input 
-                      type="text" 
-                      value={guardianProfile.city} 
-                      onChange={e => setGuardianProfile({ ...guardianProfile, city: e.target.value })} 
-                      className="form-input" 
-                      placeholder="e.g. Patna"
+                    <CreatableSelect 
+                      options={[]}
+                      placeholder="Select City (or type to add)"
+                      value={guardianProfile.city ? { value: guardianProfile.city, label: guardianProfile.city } : null}
+                      onChange={selected => setGuardianProfile({ ...guardianProfile, city: selected ? selected.value : '' })}
+                      formatCreateLabel={(val) => `Add "${val}"`}
+                      classNamePrefix="react-select"
+                      isClearable
                     />
                   </div>
 
@@ -1876,6 +1948,23 @@ export default function App() {
         {currentView === 'tutor-dashboard' && user && (
           <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
             <h1 style={{ marginBottom: '24px' }}>Tutor Profile Setup</h1>
+
+            {!user.isEmailVerified && (
+              <div className="glass-panel" style={{ background: 'rgba(234, 179, 8, 0.1)', borderColor: 'var(--warning)', padding: '16px', marginBottom: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertTriangle size={24} color="var(--warning)" />
+                <div style={{ flex: 1 }}>
+                  <strong style={{ color: 'white', display: 'block' }}>Email Verification Required</strong>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    Your email address is unverified.
+                  </span>
+                </div>
+                <div>
+                  <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '12px' }} onClick={() => setShowVerificationModal(true)}>
+                    Verify Now
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Profile verified check banner */}
             {verificationStatus && verificationStatus.status === 'APPROVED' && (
@@ -2124,7 +2213,7 @@ export default function App() {
                       <label className="form-label">ID Proof URL (Aadhar/Passport)</label>
                       <input 
                         type="text" 
-                        placeholder="https://document-link.com/id.pdf" 
+                        placeholder="Google Drive URL" 
                         value={idProofUrl} 
                         onChange={e => setIdProofUrl(e.target.value)} 
                         className="form-input" 
@@ -2135,7 +2224,7 @@ export default function App() {
                       <label className="form-label">Degree Certificate URL</label>
                       <input 
                         type="text" 
-                        placeholder="https://document-link.com/degree.pdf" 
+                        placeholder="Google Drive URL" 
                         value={degreeProofUrl} 
                         onChange={e => setDegreeProofUrl(e.target.value)} 
                         className="form-input" 
@@ -2146,7 +2235,7 @@ export default function App() {
                       <label className="form-label">Background Check Certificate</label>
                       <input 
                         type="text" 
-                        placeholder="https://document-link.com/bg.pdf" 
+                        placeholder="Google Drive URL" 
                         value={backgroundCheckUrl} 
                         onChange={e => setBackgroundCheckUrl(e.target.value)} 
                         className="form-input" 
@@ -2171,23 +2260,26 @@ export default function App() {
                   
                   <div className="form-group">
                     <label className="form-label">State/UT</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Bihar" 
-                      value={tutorProfile.state} 
-                      onChange={e => setTutorProfile({ ...tutorProfile, state: e.target.value })} 
-                      className="form-input" 
+                    <Select 
+                      options={indianStates}
+                      placeholder="Select State"
+                      value={tutorProfile.state ? { value: tutorProfile.state, label: tutorProfile.state } : null}
+                      onChange={selected => setTutorProfile({ ...tutorProfile, state: selected ? selected.value : '' })}
+                      classNamePrefix="react-select"
+                      isClearable
                     />
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">City</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Patna" 
-                      value={tutorProfile.city} 
-                      onChange={e => setTutorProfile({ ...tutorProfile, city: e.target.value })} 
-                      className="form-input" 
+                    <CreatableSelect 
+                      options={[]}
+                      placeholder="Select City (or type to add)"
+                      value={tutorProfile.city ? { value: tutorProfile.city, label: tutorProfile.city } : null}
+                      onChange={selected => setTutorProfile({ ...tutorProfile, city: selected ? selected.value : '' })}
+                      formatCreateLabel={(val) => `Add "${val}"`}
+                      classNamePrefix="react-select"
+                      isClearable
                     />
                   </div>
 
@@ -2944,6 +3036,54 @@ export default function App() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Verification Modal */}
+        {showVerificationModal && user && (
+          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '32px', borderRadius: '20px', position: 'relative' }}>
+              <button 
+                onClick={() => { setShowVerificationModal(false); setVerificationStep(1); setOtpCode(''); }}
+                style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+              >
+                <X size={24} />
+              </button>
+              
+              <h2 style={{ marginBottom: '8px' }}>Verify Contact</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Verify your email to secure your account.</p>
+              
+              {verificationStep === 1 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {!user.isEmailVerified && (
+                    <button className="btn btn-secondary" onClick={() => { setVerificationType('email'); handleSendOtp('email'); }}>
+                      <Mail size={16} style={{ marginRight: '8px' }} /> Send OTP to Email
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Enter OTP sent to your {verificationType}</label>
+                    <input 
+                      type="text" 
+                      required 
+                      className="form-input" 
+                      placeholder="123456" 
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      maxLength={6}
+                    />
+                  </div>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? 'Verifying...' : 'Verify OTP'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={() => setVerificationStep(1)} disabled={loading}>
+                    Back
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         )}
 

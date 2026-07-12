@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import CreatableSelect from 'react-select/creatable';
+import Select from 'react-select';
+
+const indianStates = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+].map(state => ({ value: state, label: state }));
+
 
 const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, setSuccessMsg, clearMessages }) => {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [registerRole, setRegisterRole] = useState('GUARDIAN');
   const [loading, setLocalLoading] = useState(false);
+  const [selectedState, setSelectedState] = useState(null);
+  const [selectedCity, setSelectedCity] = useState(null);
 
   const triggerPasswordVisibility = () => {
     setShowRegisterPassword(prev => !prev);
@@ -22,8 +31,15 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
     const role = e.target.role.value;
     const gender = e.target.gender.value;
     const linkedinUrl = e.target.linkedinUrl.value;
-    const state = e.target.state ? e.target.state.value : '';
-    const city = e.target.city ? e.target.city.value : '';
+    const state = selectedState ? selectedState.value : '';
+    const city = selectedCity ? selectedCity.value : '';
+
+    if (!state || !city) {
+        setErrorMsg('Please select a state and city.');
+        setLoading(false);
+        setLocalLoading(false);
+        return;
+    }
 
     const payload = { name, email, password, phone, role, gender, linkedinUrl, state, city };
 
@@ -127,12 +143,25 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
 
           <div className="form-group">
             <label className="form-label">State/UT</label>
-            <input type="text" name="state" required placeholder="e.g. Bihar" className="form-input" />
+            <Select
+              options={indianStates}
+              placeholder="Select State"
+              value={selectedState}
+              onChange={setSelectedState}
+              classNamePrefix="react-select"
+            />
           </div>
 
           <div className="form-group">
             <label className="form-label">City</label>
-            <input type="text" name="city" required placeholder="e.g. Patna" className="form-input" />
+            <CreatableSelect
+              placeholder="Select City (or type to add)"
+              value={selectedCity}
+              onChange={setSelectedCity}
+              options={[]}
+              formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+              classNamePrefix="react-select"
+            />
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>

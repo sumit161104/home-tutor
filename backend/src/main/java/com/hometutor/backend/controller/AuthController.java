@@ -76,6 +76,8 @@ public class AuthController {
                 response.put("profileImage", user.getProfileImage());
                 response.put("state", user.getState());
                 response.put("city", user.getCity());
+                response.put("isEmailVerified", user.isEmailVerified());
+                response.put("isPhoneVerified", user.isPhoneVerified());
                 return ResponseEntity.ok(response);
             } catch (Exception e) {
                 return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
