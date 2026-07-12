@@ -2,11 +2,41 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import CreatableSelect from 'react-select/creatable';
 import Select from 'react-select';
+import { State, City } from 'country-state-city';
 
-const indianStates = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-].map(state => ({ value: state, label: state }));
+const indianStates = State.getStatesOfCountry('IN').map(state => ({
+  value: state.isoCode,
+  label: state.name
+}));
 
+
+const customStyles = {
+  control: (provided) => ({
+    ...provided,
+    backgroundColor: 'var(--bg-secondary)',
+    borderColor: 'var(--border-color)',
+    color: 'var(--text-primary)',
+  }),
+  menu: (provided) => ({
+    ...provided,
+    backgroundColor: 'var(--bg-secondary)',
+    zIndex: 9999
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isFocused ? 'var(--primary)' : 'var(--bg-secondary)',
+    color: state.isFocused ? '#ffffff' : 'var(--text-primary)',
+    cursor: 'pointer'
+  }),
+  singleValue: (provided) => ({
+    ...provided,
+    color: 'var(--text-primary)'
+  }),
+  input: (provided) => ({
+    ...provided,
+    color: 'var(--text-primary)'
+  })
+};
 
 const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, setSuccessMsg, clearMessages }) => {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
@@ -14,6 +44,10 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
   const [loading, setLocalLoading] = useState(false);
   const [selectedState, setSelectedState] = useState(null);
   const [selectedCity, setSelectedCity] = useState(null);
+
+  const cityOptions = selectedState 
+    ? City.getCitiesOfState('IN', selectedState.value).map(city => ({ value: city.name, label: city.name }))
+    : [];
 
   const triggerPasswordVisibility = () => {
     setShowRegisterPassword(prev => !prev);
@@ -31,7 +65,7 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
     const role = e.target.role.value;
     const gender = e.target.gender.value;
     const linkedinUrl = e.target.linkedinUrl.value;
-    const state = selectedState ? selectedState.value : '';
+    const state = selectedState ? selectedState.label : ''; // Use label for full state name
     const city = selectedCity ? selectedCity.value : '';
 
     if (!state || !city) {
@@ -147,8 +181,12 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
               options={indianStates}
               placeholder="Select State"
               value={selectedState}
-              onChange={setSelectedState}
+              onChange={(selected) => {
+                setSelectedState(selected);
+                setSelectedCity(null); // Reset city when state changes
+              }}
               classNamePrefix="react-select"
+              styles={customStyles}
             />
           </div>
 
@@ -158,9 +196,10 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
               placeholder="Select City (or type to add)"
               value={selectedCity}
               onChange={setSelectedCity}
-              options={[]}
+              options={cityOptions}
               formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
               classNamePrefix="react-select"
+              styles={customStyles}
             />
           </div>
 
