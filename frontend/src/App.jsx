@@ -11,9 +11,49 @@ import {
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
-const indianStates = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-].map(state => ({ value: state, label: state }));
+const customStyles = {
+  control: (provided, state) => ({
+    ...provided,
+    backgroundColor: 'var(--bg-tertiary)',
+    borderColor: state.isFocused ? 'var(--primary)' : 'var(--border-color)',
+    color: 'var(--text-primary)',
+    boxShadow: state.isFocused ? '0 0 0 3px var(--primary-glow)' : 'none',
+    '&:hover': {
+      borderColor: state.isFocused ? 'var(--primary)' : 'var(--border-hover)'
+    }
+  }),
+  menu: (provided) => ({
+    ...provided,
+    backgroundColor: 'var(--bg-tertiary)',
+    zIndex: 9999,
+    border: '1px solid var(--border-color)'
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isFocused ? 'var(--primary)' : 'var(--bg-tertiary)',
+    color: state.isFocused ? '#ffffff' : 'var(--text-primary)',
+    cursor: 'pointer'
+  }),
+  singleValue: (provided) => ({
+    ...provided,
+    color: 'var(--text-primary)'
+  }),
+  input: (provided) => ({
+    ...provided,
+    color: 'var(--text-primary)'
+  }),
+  placeholder: (provided) => ({
+    ...provided,
+    color: 'var(--text-muted)'
+  })
+};
+
+import { State, City } from 'country-state-city';
+
+const indianStates = State.getStatesOfCountry('IN').map(state => ({
+  value: state.isoCode,
+  label: state.name
+}));
 
 export default function App() {
   // Navigation / Route state: 'search' | 'detail' | 'login' | 'register' | 'tutor-dashboard' | 'guardian-dashboard' | 'admin-dashboard'
@@ -191,9 +231,9 @@ export default function App() {
   const [guardianVerSearch, setGuardianVerSearch] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [rejectingVerId, setRejectingVerId] = useState(null)
-  const availableStates = Array.from(new Set(allTutors.map(t => t.state).filter(Boolean))).sort()
-  const availableCities = stateFilter 
-    ? Array.from(new Set(allTutors.filter(t => t.state === stateFilter).map(t => t.city).filter(Boolean))).sort()
+  const selectedStateObj = indianStates.find(s => s.label === stateFilter)
+  const availableCities = selectedStateObj 
+    ? City.getCitiesOfState('IN', selectedStateObj.value).map(c => c.name)
     : []
   // Temporary availability addition state
   const [newAvailDay, setNewAvailDay] = useState('MONDAY')
@@ -1236,15 +1276,16 @@ export default function App() {
                   <label className="form-label">State/UT</label>
                   <div style={{ position: 'relative' }}>
                     <Select 
-                      options={availableStates.map(st => ({ value: st, label: st }))}
+                      options={indianStates}
                       placeholder="Select State"
                       value={stateFilter ? { value: stateFilter, label: stateFilter } : null}
                       onChange={selected => {
-                        setStateFilter(selected ? selected.value : '');
+                        setStateFilter(selected ? selected.label : '');
                         setCity('');
                       }}
                       classNamePrefix="react-select"
                       isClearable
+                      styles={customStyles}
                     />
                   </div>
                 </div>
@@ -1256,11 +1297,12 @@ export default function App() {
                       options={availableCities.map(ct => ({ value: ct, label: ct }))}
                       placeholder="Select City"
                       value={city ? { value: city, label: city } : null}
-                      onChange={selected => setCity(selected ? selected.value : '')}
+                      onChange={selected => setCity(selected ? selected.label || selected.value : '')}
                       isDisabled={!stateFilter}
                       formatCreateLabel={(val) => `Search for "${val}"`}
                       classNamePrefix="react-select"
                       isClearable
+                      styles={customStyles}
                     />
                   </div>
                 </div>
@@ -1891,22 +1933,29 @@ export default function App() {
                       options={indianStates}
                       placeholder="Select State"
                       value={guardianProfile.state ? { value: guardianProfile.state, label: guardianProfile.state } : null}
-                      onChange={selected => setGuardianProfile({ ...guardianProfile, state: selected ? selected.value : '' })}
+                      onChange={selected => {
+                        setGuardianProfile({ ...guardianProfile, state: selected ? selected.label : '' });
+                        setGuardianProfile(prev => ({ ...prev, city: '' })); // reset city
+                      }}
                       classNamePrefix="react-select"
                       isClearable
+                      styles={customStyles}
                     />
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">City</label>
                     <CreatableSelect 
-                      options={[]}
+                      options={guardianProfile.state 
+                        ? City.getCitiesOfState('IN', indianStates.find(s => s.label === guardianProfile.state)?.value || '').map(c => ({ value: c.name, label: c.name })) 
+                        : []}
                       placeholder="Select City (or type to add)"
                       value={guardianProfile.city ? { value: guardianProfile.city, label: guardianProfile.city } : null}
                       onChange={selected => setGuardianProfile({ ...guardianProfile, city: selected ? selected.value : '' })}
                       formatCreateLabel={(val) => `Add "${val}"`}
                       classNamePrefix="react-select"
                       isClearable
+                      styles={customStyles}
                     />
                   </div>
 
@@ -2264,22 +2313,29 @@ export default function App() {
                       options={indianStates}
                       placeholder="Select State"
                       value={tutorProfile.state ? { value: tutorProfile.state, label: tutorProfile.state } : null}
-                      onChange={selected => setTutorProfile({ ...tutorProfile, state: selected ? selected.value : '' })}
+                      onChange={selected => {
+                        setTutorProfile({ ...tutorProfile, state: selected ? selected.label : '' });
+                        setTutorProfile(prev => ({ ...prev, city: '' })); // reset city
+                      }}
                       classNamePrefix="react-select"
                       isClearable
+                      styles={customStyles}
                     />
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">City</label>
                     <CreatableSelect 
-                      options={[]}
+                      options={tutorProfile.state 
+                        ? City.getCitiesOfState('IN', indianStates.find(s => s.label === tutorProfile.state)?.value || '').map(c => ({ value: c.name, label: c.name })) 
+                        : []}
                       placeholder="Select City (or type to add)"
                       value={tutorProfile.city ? { value: tutorProfile.city, label: tutorProfile.city } : null}
                       onChange={selected => setTutorProfile({ ...tutorProfile, city: selected ? selected.value : '' })}
                       formatCreateLabel={(val) => `Add "${val}"`}
                       classNamePrefix="react-select"
                       isClearable
+                      styles={customStyles}
                     />
                   </div>
 
