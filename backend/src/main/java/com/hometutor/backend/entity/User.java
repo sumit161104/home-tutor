@@ -48,10 +48,10 @@ public class User {
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved = false;
 
-    @Column(name = "is_email_verified", nullable = false)
+    @Column(name = "is_email_verified", nullable = false, columnDefinition = "boolean default false")
     private boolean isEmailVerified = false;
 
-    @Column(name = "is_phone_verified", nullable = false)
+    @Column(name = "is_phone_verified", nullable = false, columnDefinition = "boolean default false")
     private boolean isPhoneVerified = false;
 
     @Column(name = "email_otp", length = 6)
