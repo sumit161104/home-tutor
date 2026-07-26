@@ -134,7 +134,11 @@ export default function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -1241,7 +1245,7 @@ export default function App() {
       <nav className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0, padding: '16px 0' }}>
         <div className="container navbar-container">
           <div className="brand" onClick={() => { setCurrentView('home'); setSelectedTutor(null); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-            <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.png'} alt="Tutodian Logo" style={{ height: '42px', objectFit: 'contain' }} />
+            <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.jpg'} alt="Tutodian Logo" style={{ height: '42px', objectFit: 'contain' }} />
           </div>
 
           <div className="navbar-links">
