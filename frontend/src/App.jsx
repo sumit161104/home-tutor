@@ -1,3 +1,4 @@
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import React, { useState, useEffect } from 'react'
@@ -6,7 +7,7 @@ import {
   User as UserIcon, Phone, Mail, IndianRupee, Eye, EyeOff, LogIn, 
   LogOut, Shield, ChevronRight, X, Compass, CheckCircle2, 
   Plus, Trash2, Edit3, MessageCircle, Star, AlertTriangle, 
-  Check, FileText, BarChart2, CheckSquare 
+  Check, FileText, BarChart2, CheckSquare, Bell, Sun, Moon
 } from 'lucide-react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -57,8 +58,8 @@ const indianStates = State.getStatesOfCountry('IN').map(state => ({
 }));
 
 export default function App() {
-  // Navigation / Route state: 'search' | 'detail' | 'login' | 'register' | 'tutor-dashboard' | 'guardian-dashboard' | 'admin-dashboard'
-  const [currentView, setCurrentView] = useState(localStorage.getItem('token') ? 'search' : 'login')
+  // Navigation / Route state: 'home' | 'search' | 'detail' | 'login' | 'register' | 'tutor-dashboard' | 'guardian-dashboard' | 'admin-dashboard'
+  const [currentView, setCurrentView] = useState(localStorage.getItem('token') ? 'search' : 'home')
   
   // Password Visibility States
   const [showLoginPassword, setShowLoginPassword] = useState(false)
@@ -126,6 +127,48 @@ export default function App() {
   // Auth state
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null)
+  
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false)
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const fetchNotifications = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data);
+        setUnreadCount(data.filter(n => !n.read).length);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [token]);
+
+  const markNotificationAsRead = async (id) => {
+    try {
+      await fetch(`/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Search/Filter states
   const [city, setCity] = useState('')
@@ -362,7 +405,7 @@ export default function App() {
 
   // Enforce authentication view lockout wall (Item 9)
   useEffect(() => {
-    if (!token && currentView !== 'login' && currentView !== 'register') {
+    if (!token && currentView !== 'login' && currentView !== 'register' && currentView !== 'home') {
       setCurrentView('login')
     }
   }, [token, currentView])
@@ -370,13 +413,14 @@ export default function App() {
   // Synchronize state -> URL hash for back button navigation
   useEffect(() => {
     const currentHash = window.location.hash;
-    let expectedHash = '#/search';
-    if (currentView === 'login') expectedHash = '#/login';
-    else if (currentView === 'register') expectedHash = '#/register';
-    else if (currentView === 'tutor-dashboard') expectedHash = '#/tutor-dashboard';
-    else if (currentView === 'guardian-dashboard') expectedHash = '#/guardian-dashboard';
-    else if (currentView === 'admin-dashboard') expectedHash = '#/admin-dashboard';
-    else if (currentView === 'detail' && selectedTutor) expectedHash = `#/tutor/${selectedTutor.id}`;
+    let expectedHash = '#/';
+    if (currentView === 'search') expectedHash = '#/tutodian_home-tutor_search_results_page';
+    else if (currentView === 'login') expectedHash = '#/home-tutor_guardian_login_page';
+    else if (currentView === 'register') expectedHash = '#/tutodian_home-tutor_guardian_registration_page';
+    else if (currentView === 'tutor-dashboard') expectedHash = '#/tutodian_tutor-dashboard_page';
+    else if (currentView === 'guardian-dashboard') expectedHash = '#/tutodian_guardian-dashboard_page';
+    else if (currentView === 'admin-dashboard') expectedHash = '#/tutodian_admin-dashboard_page';
+    else if (currentView === 'detail' && selectedTutor) expectedHash = `#/tutodian_home-tutor_tutor_profile_page/${selectedTutor.id}`;
 
     if (currentHash !== expectedHash) {
       window.location.hash = expectedHash;
@@ -387,23 +431,28 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
-      if (!hash || hash === '#/' || hash === '#/search') {
+      if (!hash || hash === '#/') {
+        if (currentView !== 'home') {
+          setCurrentView('home');
+          setSelectedTutor(null);
+        }
+      } else if (hash === '#/tutodian_home-tutor_search_results_page') {
         if (currentView !== 'search') {
           setCurrentView('search');
           setSelectedTutor(null);
         }
-      } else if (hash === '#/login') {
+      } else if (hash === '#/home-tutor_guardian_login_page') {
         if (currentView !== 'login') setCurrentView('login');
-      } else if (hash === '#/register') {
+      } else if (hash === '#/tutodian_home-tutor_guardian_registration_page') {
         if (currentView !== 'register') setCurrentView('register');
-      } else if (hash === '#/tutor-dashboard') {
+      } else if (hash === '#/tutodian_tutor-dashboard_page') {
         if (currentView !== 'tutor-dashboard') setCurrentView('tutor-dashboard');
-      } else if (hash === '#/guardian-dashboard') {
+      } else if (hash === '#/tutodian_guardian-dashboard_page') {
         if (currentView !== 'guardian-dashboard') setCurrentView('guardian-dashboard');
-      } else if (hash === '#/admin-dashboard') {
+      } else if (hash === '#/tutodian_admin-dashboard_page') {
         if (currentView !== 'admin-dashboard') setCurrentView('admin-dashboard');
-      } else if (hash.startsWith('#/tutor/')) {
-        const id = parseInt(hash.replace('#/tutor/', ''), 10);
+      } else if (hash.startsWith('#/tutodian_home-tutor_tutor_profile_page/')) {
+        const id = parseInt(hash.replace('#/tutodian_home-tutor_tutor_profile_page/', ''), 10);
         if (currentView !== 'detail' || !selectedTutor || selectedTutor.id !== id) {
           const tutor = tutors.find(t => t.id === id);
           if (tutor) {
@@ -465,11 +514,10 @@ export default function App() {
   }
 
   const handleLogout = () => {
-    setToken('')
     setUser(null)
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    setCurrentView('search')
+    setCurrentView('home')
     clearMessages()
   }
 
@@ -1192,18 +1240,85 @@ export default function App() {
       {/* Navigation Bar */}
       <nav className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0, padding: '16px 0' }}>
         <div className="container navbar-container">
-          <div className="brand" onClick={() => { setCurrentView('search'); setSelectedTutor(null); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-            <div style={{ background: 'var(--grad-hero)', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BookOpen size={22} color="white" />
-            </div>
-            <span style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-heading)', background: 'var(--grad-hero)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>HomeTutor</span>
+          <div className="brand" onClick={() => { setCurrentView('home'); setSelectedTutor(null); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.png'} alt="Tutodian Logo" style={{ height: '42px', objectFit: 'contain' }} />
           </div>
 
           <div className="navbar-links">
+            <button 
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}
+              title="Toggle Theme"
+            >
+              {theme === 'light' ? <Moon size={22} /> : <Sun size={22} />}
+            </button>
             <span onClick={() => { setCurrentView('search'); setSelectedTutor(null); }} style={{ cursor: 'pointer', fontWeight: 600, color: currentView === 'search' ? 'var(--primary)' : 'var(--text-secondary)' }}>Find Tutors</span>
             
             {token ? (
               <>
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', position: 'relative' }}
+                    onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                    title="Notifications"
+                  >
+                    <Bell size={22} />
+                    {unreadCount > 0 && (
+                      <span style={{
+                        position: 'absolute', top: '-4px', right: '-4px', 
+                        backgroundColor: 'var(--accent)', color: 'white', 
+                        fontSize: '10px', fontWeight: 'bold', 
+                        padding: '2px 6px', borderRadius: '10px'
+                      }}>
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {showNotificationsDropdown && (
+                    <div style={{
+                      position: 'absolute', top: '100%', right: '0', marginTop: '10px',
+                      width: '320px', maxHeight: '400px', overflowY: 'auto',
+                      backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+                      borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 1000
+                    }}>
+                      <div style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Notifications</h4>
+                        <button onClick={() => setShowNotificationsDropdown(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                          <X size={16} />
+                        </button>
+                      </div>
+                      <div style={{ padding: '10px' }}>
+                        {notifications.length === 0 ? (
+                          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+                            No notifications
+                          </div>
+                        ) : (
+                          notifications.map(notif => (
+                            <div 
+                              key={notif.id} 
+                              onClick={() => { if(!notif.read) markNotificationAsRead(notif.id); }}
+                              style={{
+                                padding: '12px', marginBottom: '8px', borderRadius: '8px', cursor: 'pointer',
+                                backgroundColor: notif.read ? 'transparent' : 'var(--bg-tertiary)',
+                                borderLeft: notif.read ? '3px solid transparent' : '3px solid var(--primary)',
+                                transition: 'background-color 0.2s'
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '4px' }}>{notif.title}</div>
+                              <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{notif.message}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                {new Date(notif.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <span 
                   onClick={() => {
                     if (user.role === 'TUTOR') setCurrentView('tutor-dashboard');
@@ -1254,6 +1369,11 @@ export default function App() {
             <span>{successMsg}</span>
             <X size={18} style={{ cursor: 'pointer' }} onClick={clearMessages} />
           </div>
+        )}
+
+        {/* VIEW: Landing Page Home */}
+        {currentView === 'home' && (
+          <Home setCurrentView={setCurrentView} />
         )}
 
         {/* VIEW: Home/Search tutors */}
@@ -1713,8 +1833,8 @@ export default function App() {
                     
                     {/* Action WhatsApp */}
                     <a 
-                      href={`https://wa.me/${selectedTutor.user.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(selectedTutor.user.name)},%20I%20saw%20your%20profile%20on%20HomeTutor%20and%20would%20like%20to%20discuss%20tuition.`}
-                      target="_blank"
+                      href={`https://wa.me/${selectedTutor.user.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(selectedTutor.user.name)},%20I%20saw%20your%20profile%20on%20Tutodian%20and%20would%20like%20to%20discuss%20tuition.`}
+                      target="_blank" 
                       rel="noreferrer"
                       className="btn btn-primary"
                       style={{ width: '100%', background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)', boxShadow: 'none' }}
@@ -3148,14 +3268,18 @@ export default function App() {
 
       {/* Footer */}
       <footer style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', padding: '40px 0', marginTop: '60px' }}>
-        <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpen size={20} color="var(--primary)" />
-            <span style={{ fontWeight: 800, fontSize: '18px' }}>HomeTutor Marketplace</span>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontWeight: 800, fontSize: '18px' }}>Tutodian Marketplace</span>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center' }}>
-            &copy; {new Date().getFullYear()} HomeTutor. Connecting learners with professional teachers locally.
-          </p>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+            &copy; {new Date().getFullYear()} Tutodian. Connecting learners with professional teachers locally.
+          </div>
+          <div style={{ display: 'flex', gap: '16px', fontSize: '14px' }}>
+            <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Website</a>
+            <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Instagram</a>
+            <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>LinkedIn</a>
+          </div>
         </div>
       </footer>
     </div>

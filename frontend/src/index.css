@@ -43,6 +43,25 @@
   --radius-md: 14px;
   --radius-lg: 24px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --bg-glass: rgba(19, 27, 46, 0.7);
+}
+
+.light-theme {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  --border-color: rgba(0, 0, 0, 0.1);
+  --border-hover: rgba(0, 0, 0, 0.2);
+  
+  --grad-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  
+  /* Primary and secondary colors stay the same for brand consistency */
 }
 
 /* Global Reset */
@@ -269,7 +288,7 @@ a {
 
 /* Glass panel */
 .glass-panel {
-  background: rgba(19, 27, 46, 0.7);
+  background: var(--bg-glass);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
