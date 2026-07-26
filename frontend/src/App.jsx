@@ -1270,7 +1270,8 @@ export default function App() {
       <nav className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0, padding: '16px 0' }}>
         <div className="container navbar-container">
           <div className="brand" onClick={() => { setCurrentView('home'); setSelectedTutor(null); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-            <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.jpg'} alt="Tutodian Logo" style={{ height: '42px', objectFit: 'contain' }} />
+            <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.jpg'} alt="Tutodian Logo" style={{ height: '72px', objectFit: 'contain' }} />
+            <span style={{ fontWeight: 800, fontSize: '22px', letterSpacing: '-0.5px' }}>Tutodian</span>
           </div>
 
           <div className="navbar-links">

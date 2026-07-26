@@ -46,12 +46,29 @@ export default function Home({ setCurrentView }) {
               ))}
             </div>
           </div>
-          <div className="glass-panel" style={{ padding: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-             {/* Placeholder for illustration */}
-             <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-               <Users size={64} style={{ marginBottom: '16px', opacity: 0.5 }} />
-               <p>Illustration Placeholder (Tutor & Guardian)</p>
-             </div>
+          <div style={{ position: 'relative' }}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                borderRadius: '24px',
+                height: '400px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                overflow: 'hidden'
+              }}>
+                <img 
+                  src="/hero-illustration.png" 
+                  alt="Tutor & Guardian Illustration" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+                <p style={{ display: 'none' }}>Illustration Placeholder (Tutor & Guardian)</p>
+              </div>
           </div>
         </div>
       </section>
