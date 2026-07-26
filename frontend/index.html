@@ -17,6 +17,35 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "EducationalOrganization",
+          "@id": "https://tutodian.com/#organization",
+          "name": "Tutodian",
+          "url": "https://tutodian.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://tutodian.com/tutodian-light.png"
+          },
+          "description": "Looking for home tuition near you? Tutodian helps you find qualified home tutors by subject, class, location, and availability."
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://tutodian.com/#website",
+          "url": "https://tutodian.com/",
+          "name": "Tutodian",
+          "publisher": {
+            "@id": "https://tutodian.com/#organization"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

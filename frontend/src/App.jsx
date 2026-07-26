@@ -9,6 +9,7 @@ import {
   Plus, Trash2, Edit3, MessageCircle, Star, AlertTriangle, 
   Check, FileText, BarChart2, CheckSquare, Bell, Sun, Moon, Send, Menu
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
@@ -1214,8 +1215,6 @@ export default function App() {
     }
   }
 
-  // Login handler
-
   // Helpers for checkboxes
   const handleSubjectCheckbox = (id) => {
     const ids = [...tutorProfile.subjectIds]
@@ -1265,8 +1264,29 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
+  const getSEOData = () => {
+    switch(currentView) {
+      case 'home': return { title: 'Find the Perfect Home Tutor Near You | Tutodian', desc: 'Looking for home tuition near you? Tutodian helps you find qualified home tutors by subject, class, location, and availability.' };
+      case 'search': return { title: 'Search Tutors | Tutodian', desc: 'Browse and search our database of qualified home tutors for any subject and location.' };
+      case 'login': return { title: 'Login | Tutodian', desc: 'Log in to your Tutodian account to manage your profile, bookings, and payments.' };
+      case 'register': return { title: 'Register | Tutodian', desc: 'Sign up for Tutodian as a tutor, parent, or student.' };
+      case 'detail': return { title: selectedTutor ? `${selectedTutor.name} - Tutor Profile | Tutodian` : 'Tutor Profile | Tutodian', desc: selectedTutor ? `View ${selectedTutor.name}'s qualifications, subjects, and availability.` : 'View detailed tutor profiles on Tutodian.' };
+      default:
+        if (currentView.includes('dashboard')) return { title: 'Dashboard | Tutodian', desc: 'Manage your Tutodian account from your dashboard.' };
+        return { title: 'Tutodian', desc: 'Looking for home tuition near you? Tutodian helps you find qualified home tutors.' };
+    }
+  };
+  const seo = getSEOData();
+
   return (
-    <div className="app-wrapper">
+    <div className={`app ${theme}`}>
+      <Helmet>
+        <title>{seo.title}</title>
+        <meta name="description" content={seo.desc} />
+        <meta property="og:title" content={seo.title} />
+        <meta property="og:description" content={seo.desc} />
+      </Helmet>
+
       {/* Navigation Bar */}
       <nav className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0, padding: '16px 0' }}>
         <div className="container navbar-container">

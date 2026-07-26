@@ -1,9 +1,38 @@
 import React from 'react';
-import { Search, MapPin, BookOpen, Clock, Shield, Star, CheckCircle, Video, Users, UserPlus } from 'lucide-react';
+import { Search, MapPin, BookOpen, Clock, Shield, Star, CheckCircle, Video, Users, UserPlus, ChevronDown } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Home({ setCurrentView }) {
+  const faqData = [
+    { q: "How can I find a home tutor near me?", a: "Simply register, enter your location, class, and subject, then browse qualified tutors available in your preferred area." },
+    { q: "Can I find online tutors?", a: "Yes. Tutors on Tutodian can offer online tuition, home tuition, or hybrid learning depending on their availability." },
+    { q: "Which classes are supported?", a: "Tutors are available for Nursery, Kindergarten (KG), Class 1-12, board examinations, and competitive examination preparation." },
+    { q: "Can I search tutors by subject?", a: "Yes. You can search tutors based on Mathematics, Science, Physics, Chemistry, Biology, English, Hindi, History, Computer Science, Geography, and many other subjects." },
+    { q: "Can I contact tutors directly?", a: "Yes. After reviewing tutor profiles, guardians can communicate directly with tutors to discuss teaching methods, schedules, and tuition fees." },
+    { q: "Is registration free?", a: "Yes. Guardians and tutors can register and create their profiles on Tutodian for free." }
+  ];
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqData.map(faq => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.a
+      }
+    }))
+  };
+
   return (
     <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(faqSchema)}
+        </script>
+      </Helmet>
+      
       {/* Hero Section */}
       <section className="glow-card" style={{ padding: '60px 24px', borderRadius: '24px', marginBottom: '60px', background: 'var(--bg-secondary)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
@@ -154,19 +183,15 @@ export default function Home({ setCurrentView }) {
       {/* FAQ Section */}
       <section style={{ marginBottom: '60px' }}>
         <h2 style={{ fontSize: '32px', marginBottom: '40px', textAlign: 'center' }}>Frequently Asked Questions</h2>
-        <div style={{ display: 'grid', gap: '24px', maxWidth: '800px', margin: '0 auto' }}>
-          {[
-            { q: "How can I find a home tutor near me?", a: "Simply register, enter your location, class, and subject, then browse qualified tutors available in your preferred area." },
-            { q: "Can I find online tutors?", a: "Yes. Tutors on Tutodian can offer online tuition, home tuition, or hybrid learning depending on their availability." },
-            { q: "Which classes are supported?", a: "Tutors are available for Nursery, Kindergarten (KG), Class 1-12, board examinations, and competitive examination preparation." },
-            { q: "Can I search tutors by subject?", a: "Yes. You can search tutors based on Mathematics, Science, Physics, Chemistry, Biology, English, Hindi, History, Computer Science, Geography, and many other subjects." },
-            { q: "Can I contact tutors directly?", a: "Yes. After reviewing tutor profiles, guardians can communicate directly with tutors to discuss teaching methods, schedules, and tuition fees." },
-            { q: "Is registration free?", a: "Yes. Guardians and tutors can register and create their profiles on Tutodian for free." }
-          ].map((faq, i) => (
-            <div key={i} className="glass-panel" style={{ padding: '24px' }}>
-              <h4 style={{ fontSize: '18px', marginBottom: '12px', color: 'var(--primary)' }}>{faq.q}</h4>
-              <p style={{ color: 'var(--text-secondary)' }}>{faq.a}</p>
-            </div>
+        <div style={{ display: 'grid', gap: '16px', maxWidth: '800px', margin: '0 auto' }}>
+          {faqData.map((faq, i) => (
+            <details key={i} className="glass-panel faq-item" style={{ padding: '24px', cursor: 'pointer' }}>
+              <summary style={{ fontSize: '18px', fontWeight: '600', color: 'var(--primary)', listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {faq.q}
+                <ChevronDown size={20} />
+              </summary>
+              <p style={{ color: 'var(--text-secondary)', marginTop: '16px', lineHeight: '1.6' }}>{faq.a}</p>
+            </details>
           ))}
         </div>
       </section>

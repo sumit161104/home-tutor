@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 
 describe('App Component Integration Tests', () => {
@@ -55,7 +56,7 @@ describe('App Component Integration Tests', () => {
   });
 
   it('renders Home page when no token is present', async () => {
-    render(<App />);
+    render(<HelmetProvider><App /></HelmetProvider>);
     
     // By default, no token, so currentView is 'home'
     expect(screen.getByText('Find Qualified Home Tutors Near You')).toBeInTheDocument();
@@ -68,7 +69,7 @@ describe('App Component Integration Tests', () => {
     // We need to set the URL hash if it forces a navigation, but initially we'll just check if it renders the search or dashboard view correctly.
     // Wait, initially App uses `localStorage.getItem('token') ? 'search' : 'home'`
     
-    render(<App />);
+    render(<HelmetProvider><App /></HelmetProvider>);
 
     // Since token is present, currentView is 'search' initially. 
     await waitFor(() => {
@@ -82,7 +83,7 @@ describe('App Component Integration Tests', () => {
     window.localStorage.setItem('user', JSON.stringify({ id: 1, role: 'TUTOR' }));
     window.localStorage.setItem('testRole', 'TUTOR');
     
-    render(<App />);
+    render(<HelmetProvider><App /></HelmetProvider>);
 
     await waitFor(() => {
       expect(screen.getByText(/Find the Perfect Home Tutor Near You/i)).toBeInTheDocument();
@@ -94,7 +95,7 @@ describe('App Component Integration Tests', () => {
     window.localStorage.setItem('user', JSON.stringify({ id: 1, role: 'ADMIN' }));
     window.localStorage.setItem('testRole', 'ADMIN');
     
-    render(<App />);
+    render(<HelmetProvider><App /></HelmetProvider>);
 
     await waitFor(() => {
       // It still renders search initially
