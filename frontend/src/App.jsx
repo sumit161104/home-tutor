@@ -7,7 +7,7 @@ import {
   User as UserIcon, Phone, Mail, IndianRupee, Eye, EyeOff, LogIn, 
   LogOut, Shield, ChevronRight, X, Compass, CheckCircle2, 
   Plus, Trash2, Edit3, MessageCircle, Star, AlertTriangle, 
-  Check, FileText, BarChart2, CheckSquare, Bell, Sun, Moon
+  Check, FileText, BarChart2, CheckSquare, Bell, Sun, Moon, Send
 } from 'lucide-react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -257,6 +257,8 @@ export default function App() {
   const [adminReports, setAdminReports] = useState([])
   const [adminUsers, setAdminUsers] = useState([])
   const [showUserModal, setShowUserModal] = useState(false)
+  const [showNotificationModal, setShowNotificationModal] = useState(false)
+  const [notificationDraft, setNotificationDraft] = useState({ title: '', message: '', targetUserId: null, targetRole: null, targetName: '' })
   const [editingUser, setEditingUser] = useState(null)
   const [newUserForm, setNewUserForm] = useState({
     name: '',
@@ -982,12 +984,35 @@ export default function App() {
 
   const loadAdminUsers = async () => {
     try {
-      const res = await fetchWithAuth('/api/admin/users')
-      if (res.ok) setAdminUsers(await res.json())
-    } catch (err) {
-      console.error(err)
-    }
+      const res = await fetch('/api/users/all', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setAdminUsers(data);
+    } catch (err) { console.error(err); }
   }
+
+  const handleSendNotification = async (e) => {
+    e.preventDefault();
+    if (!token) return;
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(notificationDraft)
+      });
+      if (res.ok) {
+        setSuccessMsg('Notification sent successfully!');
+        setShowNotificationModal(false);
+        setNotificationDraft({ title: '', message: '', targetUserId: null, targetRole: null, targetName: '' });
+      } else {
+        setErrorMsg('Failed to send notification.');
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Network error while sending notification.');
+    }
+  };
 
   // Contact Verification Handlers
   const handleSendOtp = async (type) => {
@@ -2975,33 +3000,55 @@ export default function App() {
             {adminTab === 'users' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease-out' }}>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '20px' }}>User Accounts Registry ({adminUsers.length})</h3>
-                  <button 
-                    onClick={() => {
-                      setEditingUser(null);
-                      setNewUserForm({ name: '', email: '', phone: '', password: '', role: 'GUARDIAN', profileImage: '', approved: true });
-                      setShowUserModal(true);
-                    }} 
-                    className="btn btn-primary"
-                    style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Plus size={16} /> Add New User
-                  </button>
-                </div>
+                <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                    <h3 style={{ fontSize: '20px' }}>User Accounts Registry ({adminUsers.length})</h3>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button 
+                        onClick={() => {
+                          setNotificationDraft({ title: '', message: '', targetUserId: null, targetRole: 'GUARDIAN', targetName: 'All Guardians' });
+                          setShowNotificationModal(true);
+                        }} 
+                        className="btn btn-secondary"
+                        style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Send size={16} /> Broadcast Guardians
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setNotificationDraft({ title: '', message: '', targetUserId: null, targetRole: 'TUTOR', targetName: 'All Tutors' });
+                          setShowNotificationModal(true);
+                        }} 
+                        className="btn btn-secondary"
+                        style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Send size={16} /> Broadcast Tutors
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setEditingUser(null);
+                          setNewUserForm({ name: '', email: '', phone: '', password: '', role: 'GUARDIAN', profileImage: '', approved: true });
+                          setShowUserModal(true);
+                        }} 
+                        className="btn btn-primary"
+                        style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Plus size={16} /> Add New User
+                      </button>
+                    </div>
+                  </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Search users by name..." 
-                    value={userSearchQuery} 
-                    onChange={e => setUserSearchQuery(e.target.value)} 
-                    className="form-input" 
-                    style={{ maxWidth: '300px', padding: '8px 12px', fontSize: '13px' }}
-                  />
-                </div>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Search users by name..." 
+                      value={userSearchQuery} 
+                      onChange={e => setUserSearchQuery(e.target.value)} 
+                      className="form-input" 
+                      style={{ maxWidth: '300px', padding: '8px 12px', fontSize: '13px' }}
+                    />
+                  </div>
 
-                <div className="glass-panel" style={{ padding: '24px', borderRadius: '20px' }}>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
                       <thead>
@@ -3054,6 +3101,17 @@ export default function App() {
                             </td>
                             <td style={{ padding: '16px 8px', textAlign: 'right' }}>
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <button
+                                  onClick={() => {
+                                    setNotificationDraft({ title: '', message: '', targetUserId: u.id, targetRole: null, targetName: u.name });
+                                    setShowNotificationModal(true);
+                                  }}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                                >
+                                  <Send size={12} style={{ marginRight: '4px', display: 'inline-block', verticalAlign: 'text-bottom' }} />
+                                  Notify
+                                </button>
                                 <button 
                                   onClick={() => handleAdminToggleUserApproval(u.id, !u.approved)} 
                                   className="btn btn-secondary" 
@@ -3209,6 +3267,59 @@ export default function App() {
                           </button>
                           <button type="button" onClick={() => setShowUserModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>
                             Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {showNotificationModal && (
+                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s' }}>
+                    <div className="glass-panel" style={{ width: '90%', maxWidth: '500px', padding: '32px', borderRadius: '20px', position: 'relative' }}>
+                      <button 
+                        onClick={() => setShowNotificationModal(false)} 
+                        style={{ position: 'absolute', right: '20px', top: '20px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                      >
+                        <X size={24} />
+                      </button>
+                      
+                      <h2 style={{ marginBottom: '8px', fontSize: '24px' }}>Send Notification</h2>
+                      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '14px' }}>
+                        Sending to: <strong>{notificationDraft.targetName}</strong>
+                      </p>
+
+                      <form onSubmit={handleSendNotification} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Title</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            required 
+                            placeholder="Notification Title"
+                            value={notificationDraft.title}
+                            onChange={(e) => setNotificationDraft({...notificationDraft, title: e.target.value})}
+                          />
+                        </div>
+                        
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Message</label>
+                          <textarea 
+                            className="form-input" 
+                            required 
+                            rows="4"
+                            placeholder="Type your message here..."
+                            value={notificationDraft.message}
+                            onChange={(e) => setNotificationDraft({...notificationDraft, message: e.target.value})}
+                          ></textarea>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                          <button type="button" onClick={() => setShowNotificationModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                            Cancel
+                          </button>
+                          <button type="submit" className="btn btn-primary" style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
+                            <Send size={18} /> Send
                           </button>
                         </div>
                       </form>
