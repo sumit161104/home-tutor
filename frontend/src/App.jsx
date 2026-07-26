@@ -300,10 +300,10 @@ export default function App() {
       headers['Authorization'] = `Bearer ${token}`
     }
     const response = await fetch(url, { ...options, headers })
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       handleLogout()
       setCurrentView('login')
-      throw new Error('Session expired. Please log in again.')
+      throw new Error('Session expired or access denied. Please log in again.')
     }
     return response
   }
@@ -984,11 +984,11 @@ export default function App() {
 
   const loadAdminUsers = async () => {
     try {
-      const res = await fetch('/api/users/all', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setAdminUsers(data);
+      const res = await fetchWithAuth('/api/admin/users');
+      if (res.ok) {
+        const data = await res.json();
+        setAdminUsers(data);
+      }
     } catch (err) { console.error(err); }
   }
 
@@ -996,9 +996,8 @@ export default function App() {
     e.preventDefault();
     if (!token) return;
     try {
-      const res = await fetch('/api/notifications', {
+      const res = await fetchWithAuth('/api/notifications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(notificationDraft)
       });
       if (res.ok) {
@@ -1006,7 +1005,8 @@ export default function App() {
         setShowNotificationModal(false);
         setNotificationDraft({ title: '', message: '', targetUserId: null, targetRole: null, targetName: '' });
       } else {
-        setErrorMsg('Failed to send notification.');
+        const err = await res.json().catch(() => ({}));
+        setErrorMsg(err.error || 'Failed to send notification.');
       }
     } catch (err) {
       console.error(err);
