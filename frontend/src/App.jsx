@@ -106,7 +106,7 @@ export default function App() {
         fontWeight: 800,
         fontSize: fontSize,
         fontFamily: 'var(--font-heading)',
-        border: '2px solid rgba(255,255,255,0.1)',
+        border: '2px solid var(--border-color)',
         flexShrink: 0
       }}>
         {isTutor ? 'T' : 'G'}
@@ -1363,13 +1363,13 @@ export default function App() {
         
         {/* Global Notifications */}
         {errorMsg && (
-          <div className="glass-panel" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--danger)', padding: '16px', marginBottom: '24px', color: 'white', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="glass-panel" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--danger)', padding: '16px', marginBottom: '24px', color: 'var(--text-primary)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{errorMsg}</span>
             <X size={18} style={{ cursor: 'pointer' }} onClick={clearMessages} />
           </div>
         )}
         {successMsg && (
-          <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'var(--success)', padding: '16px', marginBottom: '24px', color: 'white', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'var(--success)', padding: '16px', marginBottom: '24px', color: 'var(--text-primary)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{successMsg}</span>
             <X size={18} style={{ cursor: 'pointer' }} onClick={clearMessages} />
           </div>
@@ -1591,7 +1591,7 @@ export default function App() {
                             </p>
 
                             {/* Stats Grid: Exp, Fees */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px' }}>
                               <div>
                                 <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Experience</span>
                                 <span style={{ fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1761,7 +1761,7 @@ export default function App() {
                   {reviews.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {reviews.map(r => (
-                        <div key={r.id} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                        <div key={r.id} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               {renderUserAvatar('GUARDIAN', '28px', '11px')}
@@ -1897,7 +1897,7 @@ export default function App() {
                   {selectedTutor.availabilities && selectedTutor.availabilities.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {selectedTutor.availabilities.map((av, index) => (
-                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                           <strong style={{ fontSize: '13px' }}>{av.day}</strong>
                           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                             {av.startTime.substring(0, 5)} - {av.endTime.substring(0, 5)}
@@ -1952,7 +1952,7 @@ export default function App() {
               <div className="glass-panel" style={{ background: 'rgba(234, 179, 8, 0.1)', borderColor: 'var(--warning)', padding: '16px', marginBottom: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <AlertTriangle size={24} color="var(--warning)" />
                 <div style={{ flex: 1 }}>
-                  <strong style={{ color: 'white', display: 'block' }}>Email Verification Required</strong>
+                  <strong style={{ color: 'var(--text-primary)', display: 'block' }}>Email Verification Required</strong>
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                     Your email address is unverified.
                   </span>
@@ -2005,7 +2005,7 @@ export default function App() {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {guardianBookings.map(b => (
-                      <div key={b.id} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', padding: '10px', borderRadius: '8px', fontSize: '13px' }}>
+                      <div key={b.id} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', padding: '10px', borderRadius: '8px', fontSize: '13px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                           <strong>{b.tutorProfile.user.name}</strong>
                           <span style={{ 
@@ -2127,7 +2127,7 @@ export default function App() {
               <div className="glass-panel" style={{ background: 'rgba(234, 179, 8, 0.1)', borderColor: 'var(--warning)', padding: '16px', marginBottom: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <AlertTriangle size={24} color="var(--warning)" />
                 <div style={{ flex: 1 }}>
-                  <strong style={{ color: 'white', display: 'block' }}>Email Verification Required</strong>
+                  <strong style={{ color: 'var(--text-primary)', display: 'block' }}>Email Verification Required</strong>
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                     Your email address is unverified.
                   </span>
@@ -2144,8 +2144,8 @@ export default function App() {
             {verificationStatus && verificationStatus.status === 'APPROVED' && (
               <div className="glass-panel" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'var(--success)', padding: '16px', marginBottom: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <CheckCircle2 size={24} color="var(--success)" />
-                <div>
-                  <strong style={{ color: 'white', display: 'block' }}>Verified Profile Badge Active!</strong>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ color: 'var(--text-primary)', display: 'block' }}>Verified Profile Badge Active!</strong>
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Your profile displays a verified badge, boosting discovery rankings.</span>
                 </div>
               </div>
@@ -2153,8 +2153,8 @@ export default function App() {
             {verificationStatus && verificationStatus.status === 'REJECTED' && (
               <div className="glass-panel" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--danger)', padding: '16px', marginBottom: '24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <AlertTriangle size={24} color="var(--danger)" />
-                <div>
-                  <strong style={{ color: 'white', display: 'block' }}>Verification Request Rejected</strong>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ color: 'var(--text-primary)', display: 'block' }}>Verification Request Rejected</strong>
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Reason: {verificationStatus.rejectionReason}</span>
                 </div>
               </div>
@@ -2268,7 +2268,7 @@ export default function App() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {tutorBookings.map(b => (
-                      <div key={b.id} style={{ border: '1px solid var(--border-color)', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.01)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                      <div key={b.id} style={{ border: '1px solid var(--border-color)', padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                         <div>
                           <strong style={{ fontSize: '15px', display: 'block', marginBottom: '4px' }}>{b.guardian.name}</strong>
                           <span style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'block' }}>Date: {formatDate(b.bookingDate)}</span>
@@ -2308,7 +2308,7 @@ export default function App() {
                   <h3 style={{ fontSize: '20px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Subjects You Teach</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                     {subjects.map(s => (
-                      <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', padding: '8px', background: 'rgba(255,255,255,0.01)', borderRadius: '6px' }}>
+                      <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px' }}>
                         <input 
                           type="checkbox" 
                           checked={tutorProfile.subjectIds.includes(s.id)} 
@@ -2326,7 +2326,7 @@ export default function App() {
                   <h3 style={{ fontSize: '20px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Classes/Standards You Teach</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                     {standards.map(std => (
-                      <label key={std.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', padding: '8px', background: 'rgba(255,255,255,0.01)', borderRadius: '6px' }}>
+                      <label key={std.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px' }}>
                         <input 
                           type="checkbox" 
                           checked={tutorProfile.standardIds.includes(std.id)} 
@@ -2535,7 +2535,7 @@ export default function App() {
                   {/* Current slots list */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
                     {tutorProfile.availabilities.map((av, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                         <span style={{ fontSize: '13px', fontWeight: 600 }}>{av.day}</span>
                         <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{av.startTime} - {av.endTime}</span>
                         <button type="button" onClick={() => removeAvailabilitySlot(idx)} style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
@@ -2614,7 +2614,7 @@ export default function App() {
                 style={{ 
                   background: adminTab === 'stats' ? 'var(--grad-hero)' : 'transparent',
                   border: adminTab === 'stats' ? 'none' : '1px solid var(--border-color)',
-                  color: 'white',
+                  color: adminTab === 'stats' ? 'white' : 'var(--text-primary)',
                   padding: '8px 20px',
                   borderRadius: '8px'
                 }}
@@ -2627,7 +2627,7 @@ export default function App() {
                 style={{ 
                   background: adminTab === 'verifications' ? 'var(--grad-hero)' : 'transparent',
                   border: adminTab === 'verifications' ? 'none' : '1px solid var(--border-color)',
-                  color: 'white',
+                  color: adminTab === 'verifications' ? 'white' : 'var(--text-primary)',
                   padding: '8px 20px',
                   borderRadius: '8px'
                 }}
@@ -2640,7 +2640,7 @@ export default function App() {
                 style={{ 
                   background: adminTab === 'guardian-verifications' ? 'var(--grad-hero)' : 'transparent',
                   border: adminTab === 'guardian-verifications' ? 'none' : '1px solid var(--border-color)',
-                  color: 'white',
+                  color: adminTab === 'guardian-verifications' ? 'white' : 'var(--text-primary)',
                   padding: '8px 20px',
                   borderRadius: '8px'
                 }}
@@ -2653,7 +2653,7 @@ export default function App() {
                 style={{ 
                   background: adminTab === 'reports' ? 'var(--grad-hero)' : 'transparent',
                   border: adminTab === 'reports' ? 'none' : '1px solid var(--border-color)',
-                  color: 'white',
+                  color: adminTab === 'reports' ? 'white' : 'var(--text-primary)',
                   padding: '8px 20px',
                   borderRadius: '8px'
                 }}
@@ -2666,7 +2666,7 @@ export default function App() {
                 style={{ 
                   background: adminTab === 'users' ? 'var(--grad-hero)' : 'transparent',
                   border: adminTab === 'users' ? 'none' : '1px solid var(--border-color)',
-                  color: 'white',
+                  color: adminTab === 'users' ? 'white' : 'var(--text-primary)',
                   padding: '8px 20px',
                   borderRadius: '8px'
                 }}
@@ -2746,7 +2746,7 @@ export default function App() {
                     const detailText = `Qualification: ${ver.tutorProfile.qualification}`;
 
                     return (
-                      <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'rgba(255,255,255,0.01)' }}>
+                      <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'var(--bg-tertiary)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
                           <div>
                             <strong style={{ fontSize: '16px', display: 'block' }}>{userName} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>({userRole})</span></strong>
@@ -2755,7 +2755,7 @@ export default function App() {
                           <span className="badge badge-secondary" style={{ 
                             background: ver.status === 'APPROVED' ? 'var(--success-glow)' : ver.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.1)' : 'var(--primary-glow)',
                             color: ver.status === 'APPROVED' ? 'var(--success)' : ver.status === 'REJECTED' ? 'var(--danger)' : 'var(--primary)',
-                            border: ver.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255,255,255,0.1)'
+                            border: ver.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-color)'
                           }}>
                             {ver.status}
                           </span>
@@ -2867,7 +2867,7 @@ export default function App() {
                     const detailText = 'Guardian account activation request';
 
                     return (
-                      <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'rgba(255,255,255,0.01)' }}>
+                      <div key={ver.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', background: 'var(--bg-tertiary)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
                           <div>
                             <strong style={{ fontSize: '16px', display: 'block' }}>{userName} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>({userRole})</span></strong>
@@ -2876,7 +2876,7 @@ export default function App() {
                           <span className="badge badge-secondary" style={{ 
                             background: ver.status === 'APPROVED' ? 'var(--success-glow)' : ver.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.1)' : 'var(--primary-glow)',
                             color: ver.status === 'APPROVED' ? 'var(--success)' : ver.status === 'REJECTED' ? 'var(--danger)' : 'var(--primary)',
-                            border: ver.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255,255,255,0.1)'
+                            border: ver.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-color)'
                           }}>
                             {ver.status}
                           </span>
@@ -2939,7 +2939,7 @@ export default function App() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {adminReports.map(rep => (
-                    <div key={rep.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                    <div key={rep.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', background: 'var(--bg-tertiary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                       <div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 'bold' }}>DISPUTE #{rep.id}</span>
@@ -3021,7 +3021,7 @@ export default function App() {
                             <td style={{ padding: '16px 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                               {renderUserAvatar(u.role, '36px', '14px')}
                               <div>
-                                <strong style={{ color: 'white', display: 'block' }}>{u.name}</strong>
+                                <strong style={{ color: 'var(--text-primary)', display: 'block' }}>{u.name}</strong>
                                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ID: {u.id}</span>
                               </div>
                             </td>
@@ -3033,7 +3033,7 @@ export default function App() {
                             </td>
                             <td style={{ padding: '16px 8px' }}>
                               <span className="badge badge-secondary" style={{ 
-                                background: u.role === 'ADMIN' ? 'var(--primary-glow)' : u.role === 'TUTOR' ? 'var(--success-glow)' : 'rgba(255,255,255,0.05)',
+                                background: u.role === 'ADMIN' ? 'var(--primary-glow)' : u.role === 'TUTOR' ? 'var(--success-glow)' : 'var(--bg-tertiary)',
                                 color: u.role === 'ADMIN' ? 'var(--primary)' : u.role === 'TUTOR' ? 'var(--success)' : 'white'
                               }}>
                                 {u.role}
