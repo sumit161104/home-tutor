@@ -68,7 +68,11 @@ public class ReportController {
     }
 
     private User getCurrentAuthenticatedUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        org.springframework.security.core.Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
         if (principal instanceof UserDetails userDetails) {
             try {
                 return authService.getUserByEmail(userDetails.getUsername());

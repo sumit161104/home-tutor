@@ -14,8 +14,9 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
     setLoading(true);
     setLocalLoading(true);
     clearMessages();
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+    const formData = new FormData(e.target);
+    const email = formData.get('email');
+    const password = formData.get('password');
 
     try {
       const res = await fetch('/api/auth/login', {

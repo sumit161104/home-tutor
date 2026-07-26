@@ -59,17 +59,21 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
     setLoading(true);
     setLocalLoading(true);
     clearMessages();
-    const name = e.target.name.value;
-    const email = e.target.email.value;
-    const password = e.target.password.value;
-    const phone = e.target.phone.value;
-    const role = e.target.role.value;
-    const gender = e.target.gender.value;
-    const linkedinUrl = e.target.linkedinUrl.value;
+    const formData = new FormData(e.target);
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const phone = formData.get('phone');
+    const role = formData.get('role') || registerRole;
+    const gender = formData.get('gender');
+    const linkedinUrl = formData.get('linkedinUrl');
     const state = selectedState ? selectedState.label : ''; // Use label for full state name
     const city = selectedCity ? selectedCity.value : '';
 
+    console.log('Submitting register with:', { name, email, password, phone, role, gender, linkedinUrl, state, city });
+
     if (!state || !city) {
+        console.log('Validation failed: missing state or city');
         setErrorMsg('Please select a state and city.');
         setLoading(false);
         setLocalLoading(false);
@@ -114,8 +118,9 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
 
         <form onSubmit={handleRegister}>
           <div className="form-group">
-            <label className="form-label">Join As</label>
+            <label htmlFor="role" className="form-label">Join As</label>
             <select 
+              id="role"
               name="role" 
               className="form-select" 
               value={registerRole}
@@ -162,8 +167,8 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
           </div>
 
           <div className="form-group">
-            <label className="form-label">Gender</label>
-            <select name="gender" required className="form-select">
+            <label htmlFor="gender" className="form-label">Gender</label>
+            <select id="gender" name="gender" required className="form-select">
               <option value="">Select Gender</option>
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>

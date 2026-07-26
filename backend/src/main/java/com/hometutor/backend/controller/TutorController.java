@@ -132,8 +132,8 @@ public class TutorController {
     }
 
     private User getCurrentAuthenticatedUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails userDetails) {
+        org.springframework.security.core.Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails userDetails) {
             try {
                 return authService.getUserByEmail(userDetails.getUsername());
             } catch (Exception e) {
