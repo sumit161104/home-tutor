@@ -7,7 +7,7 @@ import {
   User as UserIcon, Phone, Mail, IndianRupee, Eye, EyeOff, LogIn, 
   LogOut, Shield, ChevronRight, X, Compass, CheckCircle2, 
   Plus, Trash2, Edit3, MessageCircle, Star, AlertTriangle, 
-  Check, FileText, BarChart2, CheckSquare, Bell, Sun, Moon, Send
+  Check, FileText, BarChart2, CheckSquare, Bell, Sun, Moon, Send, Menu
 } from 'lucide-react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -132,6 +132,7 @@ export default function App() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     if (theme === 'light') {
@@ -1269,12 +1270,20 @@ export default function App() {
       {/* Navigation Bar */}
       <nav className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0, padding: '16px 0' }}>
         <div className="container navbar-container">
-          <div className="brand" onClick={() => { setCurrentView('home'); setSelectedTutor(null); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+          <div className="brand" onClick={() => { setCurrentView('home'); setSelectedTutor(null); setIsMobileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
             <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.jpg'} alt="Tutodian Logo" style={{ height: '72px', objectFit: 'contain' }} />
             <span style={{ fontWeight: 800, fontSize: '22px', letterSpacing: '-0.5px' }}>Tutodian</span>
           </div>
 
-          <div className="navbar-links">
+          <button 
+            className="mobile-menu-btn" 
+            style={{ display: 'none' }}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+
+          <div className={`navbar-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
             <button 
               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
               style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}
@@ -1282,7 +1291,7 @@ export default function App() {
             >
               {theme === 'light' ? <Moon size={22} /> : <Sun size={22} />}
             </button>
-            <span onClick={() => { setCurrentView('search'); setSelectedTutor(null); }} style={{ cursor: 'pointer', fontWeight: 600, color: currentView === 'search' ? 'var(--primary)' : 'var(--text-secondary)' }}>Find Tutors</span>
+            <span onClick={() => { setCurrentView('search'); setSelectedTutor(null); setIsMobileMenuOpen(false); }} style={{ cursor: 'pointer', fontWeight: 600, color: currentView === 'search' ? 'var(--primary)' : 'var(--text-secondary)' }}>Find Tutors</span>
             
             {token ? (
               <>
@@ -1354,6 +1363,7 @@ export default function App() {
                     if (user.role === 'TUTOR') setCurrentView('tutor-dashboard');
                     else if (user.role === 'ADMIN') setCurrentView('admin-dashboard');
                     else setCurrentView('guardian-dashboard');
+                    setIsMobileMenuOpen(false);
                   }} 
                   style={{ cursor: 'pointer', fontWeight: 600, color: (currentView.includes('dashboard')) ? 'var(--primary)' : 'var(--text-secondary)' }}
                 >
@@ -1372,10 +1382,10 @@ export default function App() {
               </>
             ) : (
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => setCurrentView('login')} className="btn btn-secondary" style={{ padding: '10px 18px', fontSize: '14px' }}>
+                <button onClick={() => { setCurrentView('login'); setIsMobileMenuOpen(false); }} className="btn btn-secondary" style={{ padding: '10px 18px', fontSize: '14px' }}>
                   <LogIn size={15} /> Login
                 </button>
-                <button onClick={() => setCurrentView('register')} className="btn btn-primary" style={{ padding: '10px 18px', fontSize: '14px' }}>
+                <button onClick={() => { setCurrentView('register'); setIsMobileMenuOpen(false); }} className="btn btn-primary" style={{ padding: '10px 18px', fontSize: '14px' }}>
                   Register
                 </button>
               </div>

@@ -335,16 +335,23 @@ a {
     align-items: stretch !important;
   }
   .navbar-container {
-    flex-direction: column !important;
-    gap: 16px !important;
-    text-align: center !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
     align-items: center !important;
+    flex-wrap: wrap !important;
   }
   .navbar-links {
+    display: none;
     flex-direction: column !important;
     gap: 12px !important;
     align-items: center !important;
     width: 100% !important;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+  }
+  .navbar-links.mobile-open {
+    display: flex !important;
   }
   .navbar-user {
     border-left: none !important;
@@ -355,6 +362,13 @@ a {
     border-top: 1px solid var(--border-color);
     padding-top: 12px;
     width: 100%;
+  }
+  .mobile-menu-btn {
+    display: flex !important;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
   }
   .hero-title {
     font-size: 28px !important;
