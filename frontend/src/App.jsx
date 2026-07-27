@@ -176,6 +176,22 @@ export default function App() {
     }
   };
 
+  const markAllNotificationsAsRead = async () => {
+    try {
+      await Promise.all(
+        notifications.filter(n => !n.read).map(n =>
+          fetch(`/api/notifications/${n.id}/read`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        )
+      );
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Search/Filter states
   const [city, setCity] = useState('')
   const [stateFilter, setStateFilter] = useState('')
@@ -421,13 +437,14 @@ export default function App() {
   // Synchronize state -> URL hash for back button navigation
   useEffect(() => {
     const currentHash = window.location.hash;
-    let expectedHash = '#/';
+    let expectedHash = '#/home-page';
     if (currentView === 'search') expectedHash = '#/tutodian_home-tutor_search_results_page';
     else if (currentView === 'login') expectedHash = '#/home-tutor_guardian_login_page';
     else if (currentView === 'register') expectedHash = '#/tutodian_home-tutor_guardian_registration_page';
     else if (currentView === 'tutor-dashboard') expectedHash = '#/tutodian_tutor-dashboard_page';
     else if (currentView === 'guardian-dashboard') expectedHash = '#/tutodian_guardian-dashboard_page';
     else if (currentView === 'admin-dashboard') expectedHash = '#/tutodian_admin-dashboard_page';
+    else if (currentView === 'notifications') expectedHash = '#/tutodian_notifications_page';
     else if (currentView === 'detail' && selectedTutor) expectedHash = `#/tutodian_home-tutor_tutor_profile_page/${selectedTutor.id}`;
 
     if (currentHash !== expectedHash) {
@@ -439,7 +456,7 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
-      if (!hash || hash === '#/') {
+      if (!hash || hash === '#/' || hash === '#/home-page') {
         if (currentView !== 'home') {
           setCurrentView('home');
           setSelectedTutor(null);
@@ -459,6 +476,8 @@ export default function App() {
         if (currentView !== 'guardian-dashboard') setCurrentView('guardian-dashboard');
       } else if (hash === '#/tutodian_admin-dashboard_page') {
         if (currentView !== 'admin-dashboard') setCurrentView('admin-dashboard');
+      } else if (hash === '#/tutodian_notifications_page') {
+        if (currentView !== 'notifications') setCurrentView('notifications');
       } else if (hash.startsWith('#/tutodian_home-tutor_tutor_profile_page/')) {
         const id = parseInt(hash.replace('#/tutodian_home-tutor_tutor_profile_page/', ''), 10);
         if (currentView !== 'detail' || !selectedTutor || selectedTutor.id !== id) {
@@ -523,6 +542,7 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null)
+    setToken('')
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setCurrentView('home')
@@ -1317,7 +1337,7 @@ export default function App() {
               <>
                 <div style={{ position: 'relative' }}>
                   <button 
-                    className="btn btn-secondary" 
+                    className={`btn btn-secondary ${unreadCount > 0 ? 'bell-ripple' : ''}`}
                     style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', position: 'relative' }}
                     onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
                     title="Notifications"
@@ -1344,9 +1364,12 @@ export default function App() {
                     }}>
                       <div style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Notifications</h4>
-                        <button onClick={() => setShowNotificationsDropdown(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                          <X size={16} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                          <button onClick={markAllNotificationsAsRead} style={{ fontSize: '13px', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0 }}>Mark all as read</button>
+                          <button onClick={() => setShowNotificationsDropdown(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                            <X size={16} />
+                          </button>
+                        </div>
                       </div>
                       <div style={{ padding: '10px' }}>
                         {notifications.length === 0 ? (
@@ -1373,6 +1396,9 @@ export default function App() {
                             </div>
                           ))
                         )}
+                      </div>
+                      <div style={{ padding: '10px', borderTop: '1px solid var(--border-color)', textAlign: 'center' }}>
+                        <button onClick={() => { setCurrentView('notifications'); setShowNotificationsDropdown(false); setIsMobileMenuOpen(false); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>See all notifications</button>
                       </div>
                     </div>
                   )}
@@ -2652,6 +2678,54 @@ export default function App() {
             </div>
           </form>
         </div>
+        )}
+
+        {/* VIEW: Notifications Panel */}
+        {currentView === 'notifications' && token && (
+          <div style={{ animation: 'fadeIn 0.4s ease-out', maxWidth: '800px', margin: '0 auto', padding: '20px 0' }}>
+            <div className="card" style={{ padding: '30px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>All Notifications</h2>
+                {notifications.some(n => !n.read) && (
+                  <button onClick={markAllNotificationsAsRead} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '13px' }}>
+                    Mark all as read
+                  </button>
+                )}
+              </div>
+              
+              {notifications.length === 0 ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <Bell size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+                  <p>You don't have any notifications yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {notifications.map(notif => (
+                    <div 
+                      key={notif.id} 
+                      onClick={() => { if(!notif.read) markNotificationAsRead(notif.id); }}
+                      style={{
+                        padding: '16px', borderRadius: '12px', cursor: 'pointer',
+                        backgroundColor: notif.read ? 'var(--bg-secondary)' : 'var(--bg-tertiary)',
+                        borderLeft: notif.read ? '4px solid transparent' : '4px solid var(--primary)',
+                        border: notif.read ? '1px solid var(--border-color)' : '1px solid var(--primary)',
+                        transition: 'all 0.2s',
+                        display: 'flex', flexDirection: 'column', gap: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text-primary)' }}>{notif.title}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          {new Date(notif.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{notif.message}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* VIEW: Admin Dashboard Panel */}
