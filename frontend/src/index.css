@@ -393,3 +393,20 @@ a {
   animation: ripple 1.5s infinite;
   border-radius: 50%;
 }
+
+@media (max-width: 768px) {
+  .notification-dropdown {
+    width: calc(100vw - 20px) !important;
+    right: -10px !important;
+  }
+  
+  .footer-container {
+    flex-direction: column !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+  
+  .footer-container > div {
+    justify-content: center !important;
+  }
+}

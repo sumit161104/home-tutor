@@ -162,6 +162,10 @@ export default function App() {
 
   useEffect(() => {
     fetchNotifications();
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const markNotificationAsRead = async (id) => {
@@ -1293,7 +1297,7 @@ export default function App() {
       case 'detail': return { title: selectedTutor ? `${selectedTutor.name} - Tutor Profile | Tutodian` : 'Tutor Profile | Tutodian', desc: selectedTutor ? `View ${selectedTutor.name}'s qualifications, subjects, and availability.` : 'View detailed tutor profiles on Tutodian.' };
       default:
         if (currentView.includes('dashboard')) return { title: 'Dashboard | Tutodian', desc: 'Manage your Tutodian account from your dashboard.' };
-        return { title: 'Tutodian', desc: 'Looking for home tuition near you? Tutodian helps you find qualified home tutors.' };
+        return { title: 'Find Qualified Home Tutors Near You | Tutodian', desc: 'Looking for home tuition near you? Tutodian helps you find qualified home tutors.' };
     }
   };
   const seo = getSEOData();
@@ -1311,7 +1315,7 @@ export default function App() {
       <nav className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0, padding: '16px 0' }}>
         <div className="container navbar-container">
           <div className="brand" onClick={() => { setCurrentView('home'); setSelectedTutor(null); setIsMobileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-            <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.jpg'} alt="Tutodian Logo" style={{ height: '72px', objectFit: 'contain' }} />
+            <img src={theme === 'light' ? '/tutodian-light.png' : '/tutodian-dark.png'} alt="Tutodian Logo" style={{ height: '72px', objectFit: 'contain' }} />
             <span style={{ fontWeight: 800, fontSize: '22px', letterSpacing: '-0.5px' }}>Tutodian</span>
           </div>
 
@@ -1356,7 +1360,7 @@ export default function App() {
                   </button>
                   
                   {showNotificationsDropdown && (
-                    <div style={{
+                    <div className="notification-dropdown" style={{
                       position: 'absolute', top: '100%', right: '0', marginTop: '10px',
                       width: '320px', maxHeight: '400px', overflowY: 'auto',
                       backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
@@ -1934,9 +1938,11 @@ export default function App() {
                     </a>
 
                     {/* Action Email */}
-                    <a href={`mailto:${selectedTutor.user.email}?subject=Home Tuition Inquiry`} className="btn btn-secondary" style={{ width: '100%' }}>
-                      <Mail size={16} /> Email Tutor
-                    </a>
+                    {user && user.role === 'ADMIN' && (
+                      <a href={`mailto:${selectedTutor.user.email}?subject=Home Tuition Inquiry`} className="btn btn-secondary" style={{ width: '100%' }}>
+                        <Mail size={16} /> Email Tutor
+                      </a>
+                    )}
                   </div>
                 </div>
 
@@ -1946,7 +1952,7 @@ export default function App() {
                     <CheckSquare size={18} color="var(--primary)" /> Request Free Trial
                   </h3>
 
-                  {token && user && user.role !== 'GUARDIAN' ? (
+                  {token && user && (user.role === 'STUDENT' || user.role === 'ADMIN') ? (
                     <span style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'block', textAlign: 'center' }}>
                       Only Guardians can request class trials.
                     </span>
@@ -3488,7 +3494,7 @@ export default function App() {
 
       {/* Footer */}
       <footer style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', padding: '40px 0', marginTop: '60px' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div className="container footer-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontWeight: 800, fontSize: '18px' }}>Tutodian Marketplace</span>
           </div>
