@@ -396,8 +396,12 @@ a {
 
 @media (max-width: 768px) {
   .notification-dropdown {
+    position: fixed !important;
+    top: 60px !important; /* Adjust below the header/menu */
+    left: 10px !important;
+    right: 10px !important;
     width: calc(100vw - 20px) !important;
-    right: -10px !important;
+    z-index: 1000 !important;
   }
   
   .footer-container {
