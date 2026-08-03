@@ -146,9 +146,12 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
             </form>
           ) : (
             <form onSubmit={handleResetPassword}>
+              {/* Hidden input to absorb aggressive browser email autofill */}
+              <input type="email" name="fake_email" style={{ display: 'none' }} autoComplete="username" />
+              
               <div className="form-group">
                 <label className="form-label">Reset Code (OTP)</label>
-                <input type="text" name="otp" required placeholder="6-digit code" className="form-input" maxLength="6" autoComplete="one-time-code" />
+                <input type="text" name="otp" required placeholder="6-digit code" className="form-input" maxLength="6" autoComplete="off" />
               </div>
               <div className="form-group">
                 <label className="form-label">New Password</label>
@@ -160,6 +163,7 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
                     placeholder="••••••••" 
                     className="form-input" 
                     style={{ paddingRight: '40px' }}
+                    autoComplete="new-password"
                   />
                   <span 
                     onClick={triggerPasswordVisibility} 
@@ -179,6 +183,7 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
                     placeholder="••••••••" 
                     className="form-input" 
                     style={{ paddingRight: '40px' }}
+                    autoComplete="new-password"
                   />
                 </div>
               </div>
