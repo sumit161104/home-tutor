@@ -3449,7 +3449,7 @@ export default function App() {
         )}
 
         {/* Verification Modal */}
-        {(!user?.isEmailVerified || showVerificationModal) && user && (
+        {((!user?.isEmailVerified && user?.role !== 'ADMIN') || showVerificationModal) && user && (
           <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
             <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '32px', borderRadius: '20px', position: 'relative' }}>
               {user.isEmailVerified ? (
