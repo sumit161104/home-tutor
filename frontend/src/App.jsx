@@ -1,6 +1,7 @@
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import SecuritySettings from './components/SecuritySettings';
 import React, { useState, useEffect } from 'react'
 import { 
   Search, MapPin, Award, BookOpen, Clock, Calendar, 
@@ -2183,26 +2184,6 @@ export default function App() {
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Change Password (Leave blank to keep current)</label>
-                    <div style={{ position: 'relative' }}>
-                      <input 
-                        type={showProfilePassword ? "text" : "password"} 
-                        placeholder="New password" 
-                        value={guardianProfile.password} 
-                        onChange={e => setGuardianProfile({ ...guardianProfile, password: e.target.value })} 
-                        className="form-input" 
-                        style={{ paddingRight: '40px' }}
-                      />
-                      <span 
-                        onClick={() => triggerPasswordVisibility(setShowProfilePassword)} 
-                        style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
-                      >
-                        {showProfilePassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </span>
-                    </div>
-                  </div>
-
                   <button 
                     type="submit" 
                     className="btn btn-primary" 
@@ -2212,6 +2193,12 @@ export default function App() {
                     {loading ? 'Saving...' : 'Save All Changes'}
                   </button>
                 </form>
+                
+                <SecuritySettings 
+                  setLoading={setLoading} 
+                  setErrorMsg={setErrorMsg} 
+                  clearMessages={clearMessages} 
+                />
               </div>
             </div>
           </div>
@@ -2694,6 +2681,14 @@ export default function App() {
               </button>
             </div>
           </form>
+
+          <div style={{ marginTop: '32px' }}>
+            <SecuritySettings 
+              setLoading={setLoading} 
+              setErrorMsg={setErrorMsg} 
+              clearMessages={clearMessages} 
+            />
+          </div>
         </div>
         )}
 

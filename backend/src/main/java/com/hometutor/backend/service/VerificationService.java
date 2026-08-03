@@ -94,5 +94,42 @@ public class VerificationService {
         return false;
     }
 
+    public void sendPasswordResetOtp(String email) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String otp = generateOtp();
+            user.setResetPasswordOtp(otp);
+            user.setResetPasswordOtpExpiry(LocalDateTime.now().plusMinutes(10));
+            userRepository.save(user);
 
+            try {
+                RestTemplate restTemplate = new RestTemplate();
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.set("api-key", brevoApiKey);
+                headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+                Map<String, Object> sender = Map.of("name", senderName, "email", senderEmail);
+                List<Map<String, String>> to = List.of(Map.of("email", user.getEmail()));
+                String subject = "Home Tutor - Password Reset OTP";
+                String textContent = "Your password reset code is: " + otp + "\n\nThis code will expire in 10 minutes. If you did not request a password reset, please ignore this email.";
+
+                Map<String, Object> body = Map.of(
+                        "sender", sender,
+                        "to", to,
+                        "subject", subject,
+                        "textContent", textContent
+                );
+
+                HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+                restTemplate.postForEntity("https://api.brevo.com/v3/smtp/email", requestEntity, String.class);
+            } catch (Exception e) {
+                System.err.println("Failed to send password reset email via Brevo: " + e.getMessage());
+                throw new RuntimeException("Failed to send reset email");
+            }
+        } else {
+            throw new RuntimeException("User not found with this email");
+        }
+    }
 }

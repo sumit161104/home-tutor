@@ -115,4 +115,36 @@ public class AuthService {
     public java.util.Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found!"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found!"));
+
+        if (user.getResetPasswordOtp() == null || !user.getResetPasswordOtp().equals(otp)) {
+            throw new IllegalArgumentException("Invalid OTP");
+        }
+
+        if (user.getResetPasswordOtpExpiry() == null || user.getResetPasswordOtpExpiry().isBefore(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("OTP has expired");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetPasswordOtp(null);
+        user.setResetPasswordOtpExpiry(null);
+        userRepository.save(user);
+    }
 }

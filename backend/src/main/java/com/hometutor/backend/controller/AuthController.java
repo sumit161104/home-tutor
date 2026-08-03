@@ -3,8 +3,12 @@ package com.hometutor.backend.controller;
 import com.hometutor.backend.dto.AuthResponse;
 import com.hometutor.backend.dto.LoginRequest;
 import com.hometutor.backend.dto.RegisterRequest;
+import com.hometutor.backend.dto.ChangePasswordRequest;
+import com.hometutor.backend.dto.ResetPasswordRequest;
+import com.hometutor.backend.dto.ForgotPasswordRequest;
 import com.hometutor.backend.entity.User;
 import com.hometutor.backend.service.AuthService;
+import com.hometutor.backend.service.VerificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,9 +22,11 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final VerificationService verificationService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, VerificationService verificationService) {
         this.authService = authService;
+        this.verificationService = verificationService;
     }
 
     @PostMapping("/register")
@@ -84,5 +90,46 @@ public class AuthController {
             }
         }
         return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            String email = ((UserDetails) principal).getUsername();
+            User user = authService.findByEmail(email).orElse(null);
+            if (user != null) {
+                try {
+                    authService.changePassword(user.getId(), request.getCurrentPassword(), request.getNewPassword());
+                    return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+                } catch (IllegalArgumentException e) {
+                    return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+                }
+            }
+        }
+        return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+    }
+
+    @PostMapping("/forgot-password/send-otp")
+    public ResponseEntity<?> sendForgotPasswordOtp(@RequestBody ForgotPasswordRequest request) {
+        try {
+            verificationService.sendPasswordResetOtp(request.getEmail());
+            return ResponseEntity.ok(Map.of("message", "OTP sent successfully if the email exists in our system."));
+        } catch (Exception e) {
+            // Avoid revealing if email exists or not for security reasons, but for this app it's okay to just return generic success
+            return ResponseEntity.ok(Map.of("message", "OTP sent successfully if the email exists in our system."));
+        }
+    }
+
+    @PostMapping("/forgot-password/reset")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to reset password"));
+        }
     }
 }

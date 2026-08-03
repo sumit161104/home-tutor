@@ -66,6 +66,12 @@ public class User {
     @Column(name = "otp_expiry")
     private LocalDateTime otpExpiry;
 
+    @Column(name = "reset_password_otp", length = 6)
+    private String resetPasswordOtp;
+
+    @Column(name = "reset_password_otp_expiry")
+    private LocalDateTime resetPasswordOtpExpiry;
+
     // Default Constructor
     public User() {}
 
@@ -212,5 +218,21 @@ public class User {
 
     public void setOtpExpiry(LocalDateTime otpExpiry) {
         this.otpExpiry = otpExpiry;
+    }
+
+    public String getResetPasswordOtp() {
+        return resetPasswordOtp;
+    }
+
+    public void setResetPasswordOtp(String resetPasswordOtp) {
+        this.resetPasswordOtp = resetPasswordOtp;
+    }
+
+    public LocalDateTime getResetPasswordOtpExpiry() {
+        return resetPasswordOtpExpiry;
+    }
+
+    public void setResetPasswordOtpExpiry(LocalDateTime resetPasswordOtpExpiry) {
+        this.resetPasswordOtpExpiry = resetPasswordOtpExpiry;
     }
 }
