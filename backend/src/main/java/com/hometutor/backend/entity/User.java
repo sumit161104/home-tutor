@@ -45,12 +45,15 @@ public class User {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @JsonProperty("isApproved")
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved = false;
 
+    @JsonProperty("isEmailVerified")
     @Column(name = "is_email_verified", nullable = false, columnDefinition = "boolean default false")
     private boolean isEmailVerified = false;
 
+    @JsonProperty("isPhoneVerified")
     @Column(name = "is_phone_verified", nullable = false, columnDefinition = "boolean default false")
     private boolean isPhoneVerified = false;
 

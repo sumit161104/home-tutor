@@ -10,7 +10,9 @@ public class AuthResponse {
     private String profileImage;
     private String state;
     private String city;
+    @com.fasterxml.jackson.annotation.JsonProperty("isEmailVerified")
     private boolean isEmailVerified;
+    @com.fasterxml.jackson.annotation.JsonProperty("isPhoneVerified")
     private boolean isPhoneVerified;
 
     public AuthResponse(String token, Long id, String name, String email, String phone, String role, String profileImage, String state, String city, boolean isEmailVerified, boolean isPhoneVerified) {
