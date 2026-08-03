@@ -363,7 +363,9 @@ export default function App() {
               role: data.role, 
               profileImage: data.profileImage,
               state: data.state,
-              city: data.city
+              city: data.city,
+              isEmailVerified: data.isEmailVerified,
+              isPhoneVerified: data.isPhoneVerified
             }
             setUser(freshUser)
             localStorage.setItem('user', JSON.stringify(freshUser))
