@@ -63,7 +63,15 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
     const name = formData.get('name');
     const email = formData.get('email');
     const password = formData.get('password');
+    const confirmPassword = formData.get('confirmPassword');
     const phone = formData.get('phone');
+
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      setLoading(false);
+      setLocalLoading(false);
+      return;
+    }
     const role = formData.get('role') || registerRole;
     const gender = formData.get('gender');
     const linkedinUrl = formData.get('linkedinUrl');
@@ -158,6 +166,20 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
               >
                 {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </span>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Confirm Password</label>
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showRegisterPassword ? "text" : "password"} 
+                name="confirmPassword" 
+                required 
+                placeholder="Confirm your password" 
+                className="form-input" 
+                style={{ paddingRight: '40px' }}
+              />
             </div>
           </div>
 

@@ -80,6 +80,13 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
     const formData = new FormData(e.target);
     const otp = formData.get('otp');
     const newPassword = formData.get('newPassword');
+    const confirmNewPassword = formData.get('confirmNewPassword');
+
+    if (newPassword !== confirmNewPassword) {
+      setErrorMsg('Passwords do not match.');
+      setLocalLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/auth/forgot-password/reset', {
@@ -141,7 +148,7 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
             <form onSubmit={handleResetPassword}>
               <div className="form-group">
                 <label className="form-label">Reset Code (OTP)</label>
-                <input type="text" name="otp" required placeholder="6-digit code" className="form-input" maxLength="6" />
+                <input type="text" name="otp" required placeholder="6-digit code" className="form-input" maxLength="6" autoComplete="one-time-code" />
               </div>
               <div className="form-group">
                 <label className="form-label">New Password</label>
@@ -160,6 +167,19 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
                   >
                     {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </span>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Confirm New Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showLoginPassword ? "text" : "password"} 
+                    name="confirmNewPassword" 
+                    required 
+                    placeholder="••••••••" 
+                    className="form-input" 
+                    style={{ paddingRight: '40px' }}
+                  />
                 </div>
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>

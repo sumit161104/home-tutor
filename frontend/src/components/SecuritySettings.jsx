@@ -17,6 +17,14 @@ const SecuritySettings = ({ setLoading, setErrorMsg, clearMessages }) => {
     const formData = new FormData(e.target);
     const currentPassword = formData.get('currentPassword');
     const newPassword = formData.get('newPassword');
+    const confirmNewPassword = formData.get('confirmNewPassword');
+
+    if (newPassword !== confirmNewPassword) {
+      setErrorMsg('New passwords do not match.');
+      setLoading(false);
+      setLocalLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -91,6 +99,20 @@ const SecuritySettings = ({ setLoading, setErrorMsg, clearMessages }) => {
             >
               {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </span>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Confirm New Password</label>
+          <div style={{ position: 'relative' }}>
+            <input 
+              type={showNewPassword ? "text" : "password"} 
+              name="confirmNewPassword"
+              placeholder="Confirm new password" 
+              required
+              className="form-input" 
+              style={{ paddingRight: '40px' }}
+            />
           </div>
         </div>
 
