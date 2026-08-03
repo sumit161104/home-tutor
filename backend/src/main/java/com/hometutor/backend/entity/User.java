@@ -45,15 +45,15 @@ public class User {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @JsonProperty("isApproved")
+    @com.fasterxml.jackson.annotation.JsonProperty("isApproved")
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved = false;
 
-    @JsonProperty("isEmailVerified")
+    @com.fasterxml.jackson.annotation.JsonProperty("isEmailVerified")
     @Column(name = "is_email_verified", nullable = false, columnDefinition = "boolean default false")
     private boolean isEmailVerified = false;
 
-    @JsonProperty("isPhoneVerified")
+    @com.fasterxml.jackson.annotation.JsonProperty("isPhoneVerified")
     @Column(name = "is_phone_verified", nullable = false, columnDefinition = "boolean default false")
     private boolean isPhoneVerified = false;
 
