@@ -1075,11 +1075,14 @@ export default function App() {
       const data = await res.json();
       if (res.ok) {
         setSuccessMsg(data.message || 'Verification successful!');
+        let updatedUser = { ...user };
         if (verificationType === 'email') {
-          setUser({ ...user, isEmailVerified: true });
+          updatedUser.isEmailVerified = true;
         } else {
-          setUser({ ...user, isPhoneVerified: true });
+          updatedUser.isPhoneVerified = true;
         }
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
         setShowVerificationModal(false);
         setVerificationStep(1);
         setOtpCode('');
