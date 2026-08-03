@@ -3,6 +3,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearMessages }) => {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLocalLoading] = useState(false);
 
   // Forgot Password States
@@ -177,7 +178,7 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
                 <label className="form-label">Confirm New Password</label>
                 <div style={{ position: 'relative' }}>
                   <input 
-                    type={showLoginPassword ? "text" : "password"} 
+                    type={showConfirmPassword ? "text" : "password"} 
                     name="confirmNewPassword" 
                     required 
                     placeholder="••••••••" 
@@ -185,6 +186,12 @@ const Login = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, clearM
                     style={{ paddingRight: '40px' }}
                     autoComplete="new-password"
                   />
+                  <span 
+                    onClick={() => setShowConfirmPassword(prev => !prev)} 
+                    style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </span>
                 </div>
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>

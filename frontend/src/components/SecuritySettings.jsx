@@ -4,6 +4,7 @@ import { Eye, EyeOff, Lock } from 'lucide-react';
 const SecuritySettings = ({ setLoading, setErrorMsg, clearMessages }) => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
 
@@ -106,13 +107,19 @@ const SecuritySettings = ({ setLoading, setErrorMsg, clearMessages }) => {
           <label className="form-label">Confirm New Password</label>
           <div style={{ position: 'relative' }}>
             <input 
-              type={showNewPassword ? "text" : "password"} 
+              type={showConfirmNewPassword ? "text" : "password"} 
               name="confirmNewPassword"
               placeholder="Confirm new password" 
               required
               className="form-input" 
               style={{ paddingRight: '40px' }}
             />
+            <span 
+              onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)} 
+              style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+            >
+              {showConfirmNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </span>
           </div>
         </div>
 

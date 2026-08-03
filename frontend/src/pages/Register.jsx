@@ -41,6 +41,7 @@ const customStyles = {
 
 const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, setSuccessMsg, clearMessages }) => {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registerRole, setRegisterRole] = useState('GUARDIAN');
   const [loading, setLocalLoading] = useState(false);
   const [selectedState, setSelectedState] = useState(null);
@@ -173,13 +174,19 @@ const Register = ({ setCurrentView, onLoginSuccess, setLoading, setErrorMsg, set
             <label className="form-label">Confirm Password</label>
             <div style={{ position: 'relative' }}>
               <input 
-                type={showRegisterPassword ? "text" : "password"} 
+                type={showConfirmPassword ? "text" : "password"} 
                 name="confirmPassword" 
                 required 
                 placeholder="Confirm your password" 
                 className="form-input" 
                 style={{ paddingRight: '40px' }}
               />
+              <span 
+                onClick={() => setShowConfirmPassword(prev => !prev)} 
+                style={{ position: 'absolute', right: '12px', top: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
             </div>
           </div>
 
