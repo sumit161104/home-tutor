@@ -82,12 +82,10 @@ public class AuthService {
             tutorVerificationRepository.save(verification);
         }
 
-        // Tutors and Guardians require admin approval to log in
-        if (savedUser.getRole() == UserRole.TUTOR || savedUser.getRole() == UserRole.GUARDIAN) {
-            savedUser.setApproved(false);
-            userRepository.save(savedUser);
-            return new AuthResponse(null, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity(), savedUser.isEmailVerified(), savedUser.isPhoneVerified());
-        }
+        // Users are approved by default so they can log in immediately and verify their email.
+        // Admins can still block them later by setting isApproved to false.
+        savedUser.setApproved(true);
+        userRepository.save(savedUser);
 
         String token = tokenProvider.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
         return new AuthResponse(token, savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getPhone(), savedUser.getRole().name(), savedUser.getProfileImage(), savedUser.getState(), savedUser.getCity(), savedUser.isEmailVerified(), savedUser.isPhoneVerified());

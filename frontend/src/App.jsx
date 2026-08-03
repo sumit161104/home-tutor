@@ -1045,7 +1045,7 @@ export default function App() {
     setLoading(true);
     clearMessages();
     try {
-      const res = await fetchWithAuth(`/api/verification/send-${type}-otp`, { method: 'POST' });
+      const res = await fetchWithAuth(`/api/auth/verify/${type}/send`, { method: 'POST' });
       const data = await res.json();
       if (res.ok) {
         setSuccessMsg(data.message || `OTP sent to your ${type}.`);
@@ -1065,7 +1065,13 @@ export default function App() {
     setLoading(true);
     clearMessages();
     try {
-      const res = await fetchWithAuth(`/api/verification/verify-${verificationType}-otp?otp=${otpCode}`, { method: 'POST' });
+      const res = await fetchWithAuth(`/api/auth/verify/${verificationType}/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ otp: otpCode })
+      });
       const data = await res.json();
       if (res.ok) {
         setSuccessMsg(data.message || 'Verification successful!');
@@ -3443,15 +3449,25 @@ export default function App() {
         )}
 
         {/* Verification Modal */}
-        {showVerificationModal && user && (
-          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+        {(!user?.isEmailVerified || showVerificationModal) && user && (
+          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
             <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '32px', borderRadius: '20px', position: 'relative' }}>
-              <button 
-                onClick={() => { setShowVerificationModal(false); setVerificationStep(1); setOtpCode(''); }}
-                style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              >
-                <X size={24} />
-              </button>
+              {user.isEmailVerified ? (
+                <button 
+                  onClick={() => { setShowVerificationModal(false); setVerificationStep(1); setOtpCode(''); }}
+                  style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                >
+                  <X size={24} />
+                </button>
+              ) : (
+                <button 
+                  onClick={handleLogout}
+                  className="btn btn-secondary"
+                  style={{ position: 'absolute', top: '16px', right: '16px', padding: '6px 12px', fontSize: '12px' }}
+                >
+                  Log Out
+                </button>
+              )}
               
               <h2 style={{ marginBottom: '8px' }}>Verify Contact</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Verify your email to secure your account.</p>

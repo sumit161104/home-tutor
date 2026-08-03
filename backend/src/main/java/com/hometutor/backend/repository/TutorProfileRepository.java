@@ -13,6 +13,10 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
 
     Optional<TutorProfile> findByUserId(Long userId);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @jakarta.transaction.Transactional
+    void deleteByUser(com.hometutor.backend.entity.User user);
+
     @Query(value = "SELECT tp.* FROM tutor_profiles tp " +
             "JOIN users u ON tp.user_id = u.id " +
             "LEFT JOIN tutor_subjects ts ON tp.id = ts.tutor_id " +
