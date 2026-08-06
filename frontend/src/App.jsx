@@ -1666,7 +1666,7 @@ export default function App() {
                                 </div>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                  <span className="badge badge-success" style={{ fontSize: '9px', padding: '2px 6px' }}>{tp.teachingMode}</span>
+                                  <span className="badge badge-success" style={{ fontSize: '9px', padding: '2px 6px' }}>{tp.teachingMode === 'BOTH' ? 'ONLINE/OFFLINE' : tp.teachingMode}</span>
                                   <span className={tp.isAvailable ? "badge badge-success" : "badge-secondary badge"} style={{ fontSize: '9px', padding: '2px 6px', textTransform: 'none' }}>
                                     {tp.isAvailable ? 'Available' : 'Unavailable'}
                                   </span>
@@ -1767,7 +1767,7 @@ export default function App() {
                             <Shield size={14} fill="var(--primary-glow)" /> Verified Profile
                           </span>
                         )}
-                        <span className="badge badge-success">{selectedTutor.teachingMode}</span>
+                        <span className="badge badge-success">{selectedTutor.teachingMode === 'BOTH' ? 'ONLINE/OFFLINE' : selectedTutor.teachingMode}</span>
                       </div>
                       
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '10px' }}>
